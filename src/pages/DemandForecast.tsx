@@ -1,0 +1,157 @@
+import { motion } from 'framer-motion'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { TrendingUp, Download, Calendar, Target, Sparkles, ArrowUpRight } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { forecastData, festivalImpact, seasonalData } from '@/data/mockData'
+import { cn } from '@/lib/utils'
+
+export default function DemandForecast() {
+  return (
+    <div className="page-container">
+      {/* Forecast Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { title: 'Forecast Accuracy', value: '94.2%', icon: Target, color: 'text-primary', bg: 'bg-primary/10' },
+          { title: 'Model Confidence', value: '96%', icon: Sparkles, color: 'text-secondary', bg: 'bg-secondary/10' },
+          { title: 'Data Points', value: '24,847', icon: TrendingUp, color: 'text-accent', bg: 'bg-accent/10' },
+          { title: 'Next Update', value: '2h 15m', icon: Calendar, color: 'text-warning', bg: 'bg-warning/10' },
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="stat-card"
+          >
+            <div className="flex items-center gap-3">
+              <div className={cn('p-2.5 rounded-xl', stat.bg)}>
+                <stat.icon className={cn('w-5 h-5', stat.color)} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                <p className="text-xs text-muted">{stat.title}</p>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Forecast Chart */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base">30-Day Demand Forecast</CardTitle>
+              <CardDescription>Predicted vs actual demand with confidence bands</CardDescription>
+            </div>
+            <Button variant="outline" size="sm">
+              <Download className="w-3.5 h-3.5" /> Download Report
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={380}>
+              <AreaChart data={forecastData}>
+                <defs>
+                  <linearGradient id="predGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#5B5CEB" stopOpacity={0.12} />
+                    <stop offset="95%" stopColor="#5B5CEB" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="confGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.06} />
+                    <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0' }} formatter={(v: number) => [`₹${(v / 1000).toFixed(1)}K`, '']} />
+                <Area type="monotone" dataKey="upperBound" stroke="none" fill="url(#confGrad)" name="Upper Bound" />
+                <Area type="monotone" dataKey="lowerBound" stroke="none" fill="transparent" name="Lower Bound" />
+                <Area type="monotone" dataKey="actual" stroke="#10B981" strokeWidth={2.5} fill="none" name="Actual" dot={{ fill: '#10B981', r: 3 }} />
+                <Area type="monotone" dataKey="predicted" stroke="#5B5CEB" strokeWidth={2} strokeDasharray="8 4" fill="url(#predGrad)" name="Predicted" />
+                <Legend />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Festival Impact & Seasonal Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Festival Impact */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Festival & Event Impact</CardTitle>
+              <CardDescription>Projected demand impact from seasonal events</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {festivalImpact.map((festival, i) => (
+                  <motion.div
+                    key={festival.name}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + i * 0.1 }}
+                    className="p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-primary/20 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold text-foreground">{festival.name}</h4>
+                      <Badge variant="default" className={festival.color}>
+                        <ArrowUpRight className="w-3 h-3 mr-1" />
+                        {festival.impact}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted mb-1">{festival.period}</p>
+                    <p className="text-xs text-muted/80">{festival.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Seasonal Analysis */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Seasonal Analysis</CardTitle>
+              <CardDescription>Quarterly demand patterns and confidence</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-5">
+                {seasonalData.map((season, i) => (
+                  <motion.div
+                    key={season.season}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 + i * 0.1 }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{season.season}</p>
+                        <p className="text-xs text-muted">Avg. {season.avgDemand.toLocaleString()} units/month</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={season.trend === 'up' ? 'success' : 'muted'}>
+                          {season.trend === 'up' ? '↑ Growing' : '→ Stable'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Progress value={season.confidence} className="flex-1" />
+                      <span className="text-xs font-medium text-foreground w-10 text-right">{season.confidence}%</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
