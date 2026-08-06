@@ -80,10 +80,10 @@ export const recentActivity = [
 ]
 
 export const quickActions = [
-  { label: 'Generate Report', icon: BarChart3, color: 'bg-primary/10 text-primary' },
-  { label: 'Run Forecast', icon: Brain, color: 'bg-secondary/10 text-secondary' },
-  { label: 'Check Inventory', icon: Package, color: 'bg-accent/10 text-accent' },
-  { label: 'View Insights', icon: Zap, color: 'bg-warning/10 text-warning' },
+  { label: 'Generate Report', icon: BarChart3, color: 'bg-primary/10 text-primary', path: '/app/reports' },
+  { label: 'Run Forecast', icon: Brain, color: 'bg-secondary/10 text-secondary', path: '/app/forecast' },
+  { label: 'Check Inventory', icon: Package, color: 'bg-accent/10 text-accent', path: '/app/inventory' },
+  { label: 'View Insights', icon: Zap, color: 'bg-warning/10 text-warning', path: '/app/ai-center' },
 ]
 
 export const notifications = [
@@ -96,14 +96,19 @@ export const notifications = [
 // ============ ANALYTICS DATA ============
 export const topProducts = [
   { name: 'Gaming Laptop Pro X1', sales: 2847, revenue: 1423500, growth: 15.2 },
+  { name: 'Smartphone Pro Max 5G', sales: 1890, revenue: 1215000, growth: 28.4 },
+  { name: 'Ultrabook Slim 14"', sales: 1420, revenue: 923000, growth: 19.1 },
+  { name: 'Curved Gaming Monitor 34"', sales: 850, revenue: 849900, growth: 16.5 },
   { name: 'Mechanical Keyboard RGB', sales: 4521, revenue: 678150, growth: 22.8 },
-  { name: 'Wireless Mouse Elite', sales: 6234, revenue: 561060, growth: -3.4 },
-  { name: 'USB-C Hub Ultra', sales: 3156, revenue: 473400, growth: 18.9 },
-  { name: 'Webcam HD Pro 4K', sales: 2890, revenue: 433500, growth: 8.7 },
   { name: '27" 4K Monitor', sales: 1567, revenue: 627800, growth: 12.1 },
-  { name: 'Noise Canceling Headset', sales: 3421, revenue: 410520, growth: 25.3 },
-  { name: 'Portable SSD 1TB', sales: 2789, revenue: 334680, growth: 9.6 },
+  { name: 'Wireless Mouse Elite', sales: 6234, revenue: 561060, growth: -3.4 },
+  { name: 'ANC Earbuds Pro', sales: 3890, revenue: 466800, growth: 24.1 },
+  { name: 'USB-C Hub Ultra', sales: 3156, revenue: 473400, growth: 18.9 },
   { name: 'Ergonomic Chair Pro', sales: 945, revenue: 472500, growth: 31.2 },
+  { name: 'Webcam HD Pro 4K', sales: 2890, revenue: 433500, growth: 8.7 },
+  { name: 'Noise Canceling Headset', sales: 3421, revenue: 410520, growth: 25.3 },
+  { name: 'Smart Watch Ultra GPS', sales: 1980, revenue: 376200, growth: 17.8 },
+  { name: 'Portable SSD 1TB', sales: 2789, revenue: 334680, growth: 9.6 },
   { name: 'Desk Lamp Smart LED', sales: 4123, revenue: 247380, growth: 14.5 },
 ]
 
@@ -194,6 +199,18 @@ export const inventoryItems = [
   { id: 10, name: 'Desk Lamp Smart LED', sku: 'DLS-010', category: 'Accessories', currentStock: 445, safetyStock: 80, reorderPoint: 120, maxStock: 300, price: 2999, status: 'overstock' as const, lastRestocked: '2026-01-25' },
   { id: 11, name: 'Thunderbolt Dock', sku: 'TBD-011', category: 'Accessories', currentStock: 67, safetyStock: 30, reorderPoint: 50, maxStock: 150, price: 12999, status: 'healthy' as const, lastRestocked: '2026-01-12' },
   { id: 12, name: 'Gaming Mouse Pad XL', sku: 'GMP-012', category: 'Peripherals', currentStock: 523, safetyStock: 100, reorderPoint: 150, maxStock: 400, price: 1299, status: 'overstock' as const, lastRestocked: '2026-01-20' },
+  { id: 13, name: 'Ultrabook Slim 14"', sku: 'UBS-14-013', category: 'Laptops', currentStock: 98, safetyStock: 40, reorderPoint: 60, maxStock: 200, price: 64999, status: 'healthy' as const, lastRestocked: '2026-01-24' },
+  { id: 14, name: 'Smartphone Pro Max 5G', sku: 'SPM-5G-014', category: 'Laptops', currentStock: 215, safetyStock: 60, reorderPoint: 100, maxStock: 400, price: 74999, status: 'healthy' as const, lastRestocked: '2026-01-22' },
+  { id: 15, name: 'Smart Watch Ultra GPS', sku: 'SWU-GPS-015', category: 'Accessories', currentStock: 184, safetyStock: 50, reorderPoint: 80, maxStock: 300, price: 18999, status: 'healthy' as const, lastRestocked: '2026-01-19' },
+  { id: 16, name: 'ANC Earbuds Pro', sku: 'ANC-EB-016', category: 'Audio & Video', currentStock: 340, safetyStock: 80, reorderPoint: 120, maxStock: 500, price: 5999, status: 'healthy' as const, lastRestocked: '2026-01-26' },
+  { id: 17, name: 'Curved Gaming Monitor 34"', sku: 'CGM-34-017', category: 'Monitors', currentStock: 42, safetyStock: 20, reorderPoint: 35, maxStock: 100, price: 49999, status: 'warning' as const, lastRestocked: '2026-01-11' },
+  { id: 18, name: 'Wireless Gamepad Pro', sku: 'WGC-P-018', category: 'Peripherals', currentStock: 290, safetyStock: 70, reorderPoint: 110, maxStock: 450, price: 3999, status: 'healthy' as const, lastRestocked: '2026-01-23' },
+  { id: 19, name: 'Streamer Mic Studio Kit', sku: 'SMS-019', category: 'Audio & Video', currentStock: 115, safetyStock: 35, reorderPoint: 55, maxStock: 200, price: 6499, status: 'healthy' as const, lastRestocked: '2026-01-14' },
+  { id: 20, name: 'Wi-Fi 6E Mesh Router', sku: 'WMR-6E-020', category: 'Accessories', currentStock: 76, safetyStock: 30, reorderPoint: 50, maxStock: 150, price: 14999, status: 'healthy' as const, lastRestocked: '2026-01-16' },
+  { id: 21, name: 'External Hard Drive 4TB', sku: 'EHD-4T-021', category: 'Storage', currentStock: 195, safetyStock: 50, reorderPoint: 80, maxStock: 350, price: 8499, status: 'healthy' as const, lastRestocked: '2026-01-21' },
+  { id: 22, name: 'Fast Power Bank 20000mAh', sku: 'FPB-20K-022', category: 'Accessories', currentStock: 410, safetyStock: 90, reorderPoint: 130, maxStock: 600, price: 2499, status: 'overstock' as const, lastRestocked: '2026-01-25' },
+  { id: 23, name: 'Smart Security Cam 2K', sku: 'SSC-2K-023', category: 'Accessories', currentStock: 160, safetyStock: 40, reorderPoint: 70, maxStock: 300, price: 3799, status: 'healthy' as const, lastRestocked: '2026-01-18' },
+  { id: 24, name: 'Motorized Standing Desk', sku: 'MSD-024', category: 'Furniture', currentStock: 18, safetyStock: 20, reorderPoint: 30, maxStock: 80, price: 32999, status: 'critical' as const, lastRestocked: '2025-12-30' },
 ]
 
 export const inventoryStats = [
@@ -211,11 +228,14 @@ export const pricingSuggestions = [
   { id: 4, product: 'USB-C Hub Ultra', currentPrice: 3499, suggestedPrice: 3299, competitorPrice: 3199, margin: 32, suggestedMargin: 29, impact: '+15% sales volume', confidence: 86 },
   { id: 5, product: '27" 4K Monitor', currentPrice: 34999, suggestedPrice: 32999, competitorPrice: 33499, margin: 22, suggestedMargin: 20, impact: '+10% sales volume', confidence: 92 },
   { id: 6, product: 'Noise Canceling Headset', currentPrice: 8999, suggestedPrice: 9499, competitorPrice: 9299, margin: 30, suggestedMargin: 33, impact: '+5% revenue', confidence: 89 },
+  { id: 7, product: 'Smartphone Pro Max 5G', currentPrice: 74999, suggestedPrice: 71999, competitorPrice: 72999, margin: 24, suggestedMargin: 22, impact: '+14% sales volume', confidence: 95 },
+  { id: 8, product: 'Curved Gaming Monitor 34"', currentPrice: 49999, suggestedPrice: 46999, competitorPrice: 47999, margin: 26, suggestedMargin: 23, impact: '+11% sales volume', confidence: 90 },
 ]
 
 export const discountRecommendations = [
   { product: 'Desk Lamp Smart LED', reason: 'Overstock clearance', currentPrice: 2999, discountPercent: 20, newPrice: 2399, expectedImpact: 'Clear 150+ excess units in 2 weeks', urgency: 'high' as const },
   { product: 'Gaming Mouse Pad XL', reason: 'Overstock clearance', currentPrice: 1299, discountPercent: 15, newPrice: 1104, expectedImpact: 'Reduce overstock by 200 units', urgency: 'medium' as const },
+  { product: 'Fast Power Bank 20000mAh', reason: 'Bulk overstock clearance', currentPrice: 2499, discountPercent: 25, newPrice: 1874, expectedImpact: 'Clear 250+ units, free up warehouse capital', urgency: 'high' as const },
   { product: 'Wireless Mouse Elite', reason: 'Competitive pricing', currentPrice: 2499, discountPercent: 8, newPrice: 2299, expectedImpact: 'Match competitor pricing, recover market share', urgency: 'high' as const },
   { product: 'Portable SSD 1TB', reason: 'Seasonal promotion', currentPrice: 6999, discountPercent: 10, newPrice: 6299, expectedImpact: 'Boost Q1 sales by 22%', urgency: 'low' as const },
 ]

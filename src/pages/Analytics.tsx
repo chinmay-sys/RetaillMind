@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -12,7 +13,87 @@ import {
   customerGrowthData, storeComparisonData, profitMarginData
 } from '@/data/mockData'
 
+const last7DaysMarginData = [
+  { month: 'Jan 20', revenue: 145000, cost: 101500, profit: 43500 },
+  { month: 'Jan 21', revenue: 162000, cost: 113400, profit: 48600 },
+  { month: 'Jan 22', revenue: 158000, cost: 110600, profit: 47400 },
+  { month: 'Jan 23', revenue: 185000, cost: 129500, profit: 55500 },
+  { month: 'Jan 24', revenue: 210000, cost: 147000, profit: 63000 },
+  { month: 'Jan 25', revenue: 235000, cost: 164500, profit: 70500 },
+  { month: 'Jan 26', revenue: 195000, cost: 136500, profit: 58500 },
+]
+
+const last7DaysSalesData = [
+  { month: 'Jan 20', sales: 142, revenue: 145000 },
+  { month: 'Jan 21', sales: 158, revenue: 162000 },
+  { month: 'Jan 22', sales: 151, revenue: 158000 },
+  { month: 'Jan 23', sales: 182, revenue: 185000 },
+  { month: 'Jan 24', sales: 215, revenue: 210000 },
+  { month: 'Jan 25', sales: 240, revenue: 235000 },
+  { month: 'Jan 26', sales: 198, revenue: 195000 },
+]
+
+const last30DaysMarginData = [
+  { month: 'Jan 1-5', revenue: 720000, cost: 504000, profit: 216000 },
+  { month: 'Jan 6-10', revenue: 780000, cost: 546000, profit: 234000 },
+  { month: 'Jan 11-15', revenue: 810000, cost: 567000, profit: 243000 },
+  { month: 'Jan 16-20', revenue: 790000, cost: 553000, profit: 237000 },
+  { month: 'Jan 21-25', revenue: 860000, cost: 602000, profit: 258000 },
+  { month: 'Jan 26-30', revenue: 840000, cost: 588000, profit: 252000 },
+]
+
+const last30DaysSalesData = [
+  { month: 'Jan 1-5', sales: 720, revenue: 720000 },
+  { month: 'Jan 6-10', sales: 780, revenue: 780000 },
+  { month: 'Jan 11-15', sales: 810, revenue: 810000 },
+  { month: 'Jan 16-20', sales: 790, revenue: 790000 },
+  { month: 'Jan 21-25', sales: 860, revenue: 860000 },
+  { month: 'Jan 26-30', sales: 840, revenue: 840000 },
+]
+
 export default function Analytics() {
+  const [timeRange, setTimeRange] = useState('12m')
+  const [category, setCategory] = useState('all')
+  const [store, setStore] = useState('all')
+
+  const storeMultiplier = store === 'mumbai' ? 0.35 : store === 'delhi' ? 0.32 : store === 'bangalore' ? 0.28 : 1.0
+
+  const rawMarginData = timeRange === '7d' ? last7DaysMarginData :
+                        timeRange === '30d' ? last30DaysMarginData :
+                        timeRange === '3m' ? profitMarginData.slice(-3) :
+                        profitMarginData
+
+  const rawSalesData = timeRange === '7d' ? last7DaysSalesData :
+                       timeRange === '30d' ? last30DaysSalesData :
+                       timeRange === '3m' ? revenueChartData.slice(-3) :
+                       revenueChartData
+
+  const filteredMarginData = rawMarginData.map(d => ({
+    ...d,
+    revenue: Math.round(d.revenue * storeMultiplier),
+    cost: Math.round(d.cost * storeMultiplier),
+    profit: Math.round(d.profit * storeMultiplier),
+  }))
+
+  const filteredSalesData = rawSalesData.map(d => ({
+    ...d,
+    sales: Math.round(d.sales * storeMultiplier),
+    revenue: Math.round(d.revenue * storeMultiplier),
+  }))
+
+  const filteredProducts = topProducts.filter(p => {
+    if (category === 'all') return true
+    if (category === 'laptops') return p.name.includes('Laptop') || p.name.includes('Monitor')
+    if (category === 'peripherals') return p.name.includes('Keyboard') || p.name.includes('Mouse') || p.name.includes('SSD') || p.name.includes('Hub') || p.name.includes('Chair') || p.name.includes('Lamp')
+    if (category === 'audio') return p.name.includes('Headset') || p.name.includes('Webcam')
+    return true
+  }).map(p => ({
+    ...p,
+    revenue: Math.round(p.revenue * storeMultiplier),
+  }))
+
+  const maxProductRevenue = filteredProducts.length > 0 ? Math.max(...filteredProducts.map(p => p.revenue)) : 1
+
   return (
     <div className="page-container">
       {/* Filters Row */}
@@ -21,7 +102,7 @@ export default function Analytics() {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-wrap items-center gap-3"
       >
-        <Select defaultValue="12m">
+        <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Time Range" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="7d">Last 7 days</SelectItem>
@@ -30,7 +111,7 @@ export default function Analytics() {
             <SelectItem value="12m">Last 12 months</SelectItem>
           </SelectContent>
         </Select>
-        <Select defaultValue="all">
+        <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Category" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
@@ -39,7 +120,7 @@ export default function Analytics() {
             <SelectItem value="audio">Audio & Video</SelectItem>
           </SelectContent>
         </Select>
-        <Select defaultValue="all">
+        <Select value={store} onValueChange={setStore}>
           <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Store" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Stores</SelectItem>
@@ -56,11 +137,16 @@ export default function Analytics() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Revenue & Profit Trend</CardTitle>
-              <p className="text-xs text-muted">Monthly breakdown with margin analysis</p>
+              <p className="text-xs text-muted">
+                {timeRange === '7d' ? 'Daily breakdown (Last 7 Days)' :
+                 timeRange === '30d' ? 'Period breakdown (Last 30 Days)' :
+                 timeRange === '3m' ? 'Quarterly breakdown (Last 3 Months)' :
+                 'Monthly breakdown with margin analysis'}
+              </p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={profitMarginData}>
+                <AreaChart data={filteredMarginData}>
                   <defs>
                     <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#5B5CEB" stopOpacity={0.12} />
@@ -73,8 +159,8 @@ export default function Analytics() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000000).toFixed(1)}M`} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0' }} formatter={(v: number) => [`₹${(v / 100000).toFixed(1)}L`, '']} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000000 ? `₹${(v / 1000000).toFixed(1)}M` : `₹${(v / 1000).toFixed(0)}K`} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0' }} formatter={(v: number) => [v >= 1000000 ? `₹${(v / 100000).toFixed(1)}L` : `₹${(v / 1000).toFixed(0)}K`, '']} />
                   <Area type="monotone" dataKey="revenue" stroke="#5B5CEB" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
                   <Area type="monotone" dataKey="profit" stroke="#10B981" strokeWidth={2} fill="url(#profGrad)" name="Profit" />
                   <Legend />
@@ -88,14 +174,18 @@ export default function Analytics() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Sales Trend</CardTitle>
-              <p className="text-xs text-muted">Monthly unit sales volume</p>
+              <p className="text-xs text-muted">
+                {timeRange === '7d' ? 'Daily sales volume (Last 7 Days)' :
+                 timeRange === '30d' ? 'Period sales volume (Last 30 Days)' :
+                 'Monthly unit sales volume'}
+              </p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={revenueChartData}>
+                <BarChart data={filteredSalesData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0' }} />
                   <Bar dataKey="sales" fill="#7C3AED" radius={[6, 6, 0, 0]} name="Sales" />
                 </BarChart>
@@ -114,7 +204,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {topProducts.slice(0, 8).map((product, i) => (
+                {filteredProducts.slice(0, 8).map((product, i) => (
                   <div key={product.name} className="flex items-center gap-3 group">
                     <span className="text-xs text-muted w-6 text-right">{i + 1}</span>
                     <div className="flex-1 min-w-0">
@@ -125,7 +215,7 @@ export default function Analytics() {
                       <div className="w-full bg-gray-100 rounded-full h-1.5">
                         <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: `${(product.revenue / topProducts[0].revenue) * 100}%` }}
+                          animate={{ width: `${(product.revenue / maxProductRevenue) * 100}%` }}
                           transition={{ duration: 0.8, delay: 0.4 + i * 0.05 }}
                           className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
                         />

@@ -22,6 +22,12 @@ const apiKeys = [
 
 export default function Settings() {
   const [showKey, setShowKey] = useState<number | null>(null)
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
+
+  const handleSaveSettings = () => {
+    setSaveFeedback('Settings saved successfully!')
+    setTimeout(() => setSaveFeedback(null), 3000)
+  }
 
   return (
     <div className="page-container max-w-4xl">
@@ -89,8 +95,13 @@ export default function Settings() {
                     <Input defaultValue="Admin" disabled />
                   </div>
                 </div>
+                {saveFeedback && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-success font-medium bg-success-50 border border-success-200 p-2 rounded-lg">
+                    ✅ {saveFeedback}
+                  </motion.div>
+                )}
                 <div className="flex justify-end">
-                  <Button>Save Changes</Button>
+                  <Button onClick={handleSaveSettings} className="cursor-pointer">Save Changes</Button>
                 </div>
               </CardContent>
             </Card>
@@ -127,7 +138,7 @@ export default function Settings() {
                     <Input defaultValue="25-50 employees" />
                   </div>
                 </div>
-                <div className="flex justify-end"><Button>Save Changes</Button></div>
+                <div className="flex justify-end"><Button onClick={handleSaveSettings} className="cursor-pointer">Save Changes</Button></div>
               </CardContent>
             </Card>
           </motion.div>

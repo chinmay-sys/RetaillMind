@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { Download, Brain, AlertTriangle, CheckCircle2, Package, Clock } from 'lucide-react'
@@ -8,9 +9,8 @@ import { StatCard } from '@/components/shared/StatCard'
 import { dashboardStats, revenueChartData, inventoryHealthData, recentActivity, quickActions } from '@/data/mockData'
 import { cn } from '@/lib/utils'
 
-
-
 export default function Dashboard() {
+  const navigate = useNavigate()
   return (
     <div className="page-container">
       {/* Stats Grid */}
@@ -129,7 +129,8 @@ export default function Dashboard() {
                 {quickActions.map((action) => (
                   <button
                     key={action.label}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 hover:-translate-y-0.5 group"
+                    onClick={() => action.path && navigate(action.path)}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 hover:-translate-y-0.5 group cursor-pointer"
                   >
                     <div className={cn('p-2 rounded-lg transition-transform duration-200 group-hover:scale-110', action.color)}>
                       <action.icon className="w-4 h-4" />

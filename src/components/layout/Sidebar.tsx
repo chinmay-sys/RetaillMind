@@ -1,5 +1,5 @@
 
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BarChart3, TrendingUp, Package, DollarSign,
@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/contexts/AuthContext'
 
 const navItems = [
   { path: '/app', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -30,6 +31,17 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/auth/login')
+  }
+
+  const initials = user
+    ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase()
+    : 'RM'
 
   return (
     <motion.aside
@@ -136,7 +148,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       )}>
         <Avatar className="w-9 h-9 shrink-0">
           <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white text-xs font-semibold">
-            CR
+            {initials}
           </AvatarFallback>
         </Avatar>
         <AnimatePresence>
@@ -148,8 +160,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               transition={{ duration: 0.2 }}
               className="flex-1 min-w-0"
             >
-              <p className="text-sm font-medium text-foreground truncate">Chinmay R.</p>
-              <p className="text-xs text-muted truncate">Admin</p>
+              <p className="text-sm font-medium text-foreground truncate">
+                {user ? `${user.first_name} ${user.last_name}` : 'Retail Manager'}
+              </p>
+              <p className="text-xs text-muted truncate">
+                {user?.role || 'Retail Manager'}
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -159,7 +175,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-gray-100 transition-colors"
+              onClick={handleLogout}
+              title="Log out"
+              className="p-1.5 rounded-lg text-muted hover:text-danger hover:bg-red-50 transition-colors"
             >
               <LogOut className="w-4 h-4" />
             </motion.button>

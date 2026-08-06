@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     # Database — SQLite for development, PostgreSQL for production
     DATABASE_URL: str = "sqlite:///./retailmind.db"
     
-    # JWT Authentication — auto-generate secure key if not provided
-    SECRET_KEY: str = secrets.token_hex(32)
+    # JWT Authentication — static key fallback for development consistency
+    SECRET_KEY: str = "retailmind-ai-secret-key-super-secure-change-in-production-2026"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
@@ -27,8 +27,11 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
+        "http://localhost:5174",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://localhost:4173",
     ]
 
     class Config:

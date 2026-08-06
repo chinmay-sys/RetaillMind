@@ -5,7 +5,6 @@ Run with: python -m app.seed
 import random
 import math
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
 from app.database import SessionLocal, init_db
 from app.models.models import (
     Role, User, UserRole, Category, Supplier, Product,
@@ -13,7 +12,34 @@ from app.models.models import (
     AIRecommendation, RecommendationStatus, Report, AuditLog
 )
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import hashlib
+
+try:
+    import bcrypt  # type: ignore
+    HAS_BCRYPT = True
+except ImportError:
+    HAS_BCRYPT = False
+
+try:
+    from passlib.context import CryptContext  # type: ignore
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    HAS_PASSLIB = True
+except Exception:
+    HAS_PASSLIB = False
+
+def _hash(pwd: str) -> str:
+    pwd_bytes = pwd.encode("utf-8")[:72]
+    if HAS_BCRYPT:
+        try:
+            return bcrypt.hashpw(pwd_bytes, bcrypt.gensalt()).decode("utf-8")
+        except Exception:
+            pass
+    if HAS_PASSLIB:
+        try:
+            return pwd_context.hash(pwd_bytes.decode("utf-8", errors="ignore"))
+        except Exception:
+            pass
+    return "$sha256$" + hashlib.sha256(pwd_bytes).hexdigest()
 
 def seed():
     init_db()
@@ -42,21 +68,21 @@ def seed():
         User(
             first_name="Chinmay", last_name="R.",
             email="chinmay@retailmind.ai",
-            hashed_password=pwd_context.hash("admin123"),
+            hashed_password=_hash("admin123"),
             role=UserRole.ADMIN, role_id=roles[0].id,
             organization="RetailMind Corp"
         ),
         User(
             first_name="Priya", last_name="Sharma",
             email="priya@retailmind.ai",
-            hashed_password=pwd_context.hash("manager123"),
+            hashed_password=_hash("manager123"),
             role=UserRole.RETAIL_MANAGER, role_id=roles[1].id,
             organization="RetailMind Corp"
         ),
         User(
             first_name="Vikram", last_name="Desai",
             email="vikram@retailmind.ai",
-            hashed_password=pwd_context.hash("analyst123"),
+            hashed_password=_hash("analyst123"),
             role=UserRole.BUSINESS_ANALYST, role_id=roles[2].id,
             organization="RetailMind Corp"
         ),
@@ -123,6 +149,18 @@ def seed():
         ("DLS-010", "Desk Lamp Smart LED", 4, 4, 1800, 2999, 2399, 1999, 3499),
         ("TBD-011", "Thunderbolt Dock", 4, 0, 8000, 12999, 12499, 10999, 14999),
         ("GMP-012", "Gaming Mouse Pad XL", 1, 5, 800, 1299, 1199, 999, 1499),
+        ("UBS-14-013", "Ultrabook Slim 14\"", 0, 0, 48000, 64999, 62999, 58999, 69999),
+        ("SPM-5G-014", "Smartphone Pro Max 5G", 0, 1, 55000, 74999, 71999, 68999, 79999),
+        ("SWU-GPS-015", "Smart Watch Ultra GPS", 4, 2, 13000, 18999, 17999, 15999, 20999),
+        ("ANC-EB-016", "ANC Earbuds Pro", 2, 3, 3800, 5999, 5499, 4999, 6499),
+        ("CGM-34-017", "Curved Gaming Monitor 34\"", 1, 0, 36000, 49999, 46999, 43999, 53999),
+        ("WGC-P-018", "Wireless Gamepad Pro", 1, 4, 2500, 3999, 3699, 3299, 4499),
+        ("SMS-019", "Streamer Mic Studio Kit", 2, 1, 4200, 6499, 5999, 5499, 6999),
+        ("WMR-6E-020", "Wi-Fi 6E Mesh Router", 4, 2, 9500, 14999, 13999, 12999, 15999),
+        ("EHD-4T-021", "External Hard Drive 4TB", 3, 1, 5800, 8499, 7999, 7499, 8999),
+        ("FPB-20K-022", "Fast Power Bank 20000mAh", 4, 4, 1500, 2499, 1874, 1699, 2799),
+        ("SSC-2K-023", "Smart Security Cam 2K", 4, 2, 2400, 3799, 3499, 3199, 4199),
+        ("MSD-024", "Motorized Standing Desk", 5, 3, 21000, 32999, 30999, 28999, 35999),
     ]
     products = []
     for sku, name, cat_idx, sup_idx, cost, price, suggested, min_p, max_p in products_data:
@@ -152,6 +190,18 @@ def seed():
         (445, 80, 120, 300, "Warehouse A-3", InventoryStatus.OVERSTOCK),
         (67, 30, 50, 150, "Warehouse B-2", InventoryStatus.HEALTHY),
         (523, 100, 150, 400, "Warehouse A-1", InventoryStatus.OVERSTOCK),
+        (98, 40, 60, 200, "Warehouse A-1", InventoryStatus.HEALTHY),
+        (215, 60, 100, 400, "Warehouse A-2", InventoryStatus.HEALTHY),
+        (184, 50, 80, 300, "Warehouse B-1", InventoryStatus.HEALTHY),
+        (340, 80, 120, 500, "Warehouse A-3", InventoryStatus.HEALTHY),
+        (42, 20, 35, 100, "Warehouse B-2", InventoryStatus.WARNING),
+        (290, 70, 110, 450, "Warehouse A-2", InventoryStatus.HEALTHY),
+        (115, 35, 55, 200, "Warehouse B-1", InventoryStatus.HEALTHY),
+        (76, 30, 50, 150, "Warehouse A-3", InventoryStatus.HEALTHY),
+        (195, 50, 80, 350, "Warehouse B-2", InventoryStatus.HEALTHY),
+        (410, 90, 130, 600, "Warehouse A-1", InventoryStatus.OVERSTOCK),
+        (160, 40, 70, 300, "Warehouse B-1", InventoryStatus.HEALTHY),
+        (18, 20, 30, 80, "Warehouse C-1", InventoryStatus.CRITICAL),
     ]
     inventories = []
     for i, (stock, safety, reorder, max_s, loc, status) in enumerate(inventory_data):

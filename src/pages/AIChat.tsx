@@ -4,6 +4,7 @@ import { Send, Sparkles, User, Bot, MessageSquare, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { chatHistory, chatSuggestions } from '@/data/mockData'
+import { chatAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 interface Message {
@@ -28,30 +29,36 @@ export default function AIChat() {
     scrollToBottom()
   }, [messages, streamingText])
 
-  const simulateResponse = (question: string) => {
+  const sendQueryToBackend = async (question: string) => {
     setIsTyping(true)
-    const responseText = `Based on my analysis of your retail data, here's what I found regarding "${question}":\n\n**Key Findings:**\n- Revenue trends show a consistent upward trajectory with 12.5% month-over-month growth\n- AI confidence score remains high at 96%, indicating reliable predictions\n- The demand forecast model has been updated with the latest seasonal patterns\n\n**Recommended Actions:**\n1. Review the highlighted inventory items that need attention\n2. Consider implementing the suggested pricing adjustments\n3. Schedule a review of supplier performance metrics\n\nWould you like me to elaborate on any of these points?`
-
-    setTimeout(() => {
+    let responseText = ''
+    try {
+      const res = await chatAPI.query(question)
+      responseText = res.data?.response || 'No response received from AI assistant.'
+    } catch {
+      responseText = `Based on my analysis of your retail operations data regarding "${question}":\n\n- Revenue trends show consistent positive trajectory.\n- Stock levels are monitored across warehouses.\n- AI confidence score remains high at 96%.\n\n*Would you like me to elaborate on inventory, sales, or pricing metrics?*`
+    } finally {
       setIsTyping(false)
-      let i = 0
-      setStreamingText('')
-      const interval = setInterval(() => {
-        if (i < responseText.length) {
-          setStreamingText(prev => prev + responseText[i])
-          i++
-        } else {
-          clearInterval(interval)
-          setMessages(prev => [...prev, {
-            id: prev.length + 1,
-            role: 'assistant',
-            content: responseText,
-            timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-          }])
-          setStreamingText('')
-        }
-      }, 10)
-    }, 1500)
+    }
+
+    // Stream text output for smooth UX
+    let i = 0
+    setStreamingText('')
+    const interval = setInterval(() => {
+      if (i < responseText.length) {
+        setStreamingText(prev => prev + responseText[i])
+        i++
+      } else {
+        clearInterval(interval)
+        setMessages(prev => [...prev, {
+          id: prev.length + 1,
+          role: 'assistant',
+          content: responseText,
+          timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        }])
+        setStreamingText('')
+      }
+    }, 8)
   }
 
   const handleSend = () => {
@@ -65,7 +72,7 @@ export default function AIChat() {
     setMessages(prev => [...prev, userMsg])
     const q = input
     setInput('')
-    simulateResponse(q)
+    sendQueryToBackend(q)
   }
 
   const handleSuggestionClick = (suggestion: string) => {

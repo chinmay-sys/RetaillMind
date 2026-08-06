@@ -58,8 +58,8 @@ class RetailDemandForecaster:
         df['is_year_end'] = df['month'].apply(lambda m: 1 if m == 12 else 0)
         df['is_back_to_school'] = df['month'].apply(lambda m: 1 if m == 6 else 0)
 
-        # Fill NaN from lag/rolling with backfill then 0
-        df = df.fillna(method='bfill').fillna(0)
+        # Fill NaN from lag/rolling with bfill then 0
+        df = df.bfill().fillna(0)
 
         return df
 

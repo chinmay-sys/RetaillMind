@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { TrendingUp, Download, Calendar, Target, Sparkles, ArrowUpRight } from 'lucide-react'
@@ -9,8 +10,34 @@ import { forecastData, festivalImpact, seasonalData } from '@/data/mockData'
 import { cn } from '@/lib/utils'
 
 export default function DemandForecast() {
+  const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null)
+
+  const handleDownloadForecastReport = () => {
+    const csvContent = `Date,Predicted Demand (INR),Actual Demand (INR),Lower Bound (INR),Upper Bound (INR)
+${forecastData.map(f => `${f.date},${f.predicted},${f.actual || ''},${f.lowerBound},${f.upperBound}`).join('\n')}
+`
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', '30_Day_Demand_Forecast_Report.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    setDownloadFeedback('Downloaded 30_Day_Demand_Forecast_Report.csv!')
+    setTimeout(() => setDownloadFeedback(null), 3000)
+  }
+
   return (
     <div className="page-container">
+      {downloadFeedback && (
+        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs text-success font-medium bg-success-50 border border-success-200 px-3 py-1.5 rounded-lg shadow-sm mb-2 inline-block">
+          ✅ {downloadFeedback}
+        </motion.div>
+      )}
+
       {/* Forecast Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -47,7 +74,7 @@ export default function DemandForecast() {
               <CardTitle className="text-base">30-Day Demand Forecast</CardTitle>
               <CardDescription>Predicted vs actual demand with confidence bands</CardDescription>
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDownloadForecastReport} className="cursor-pointer">
               <Download className="w-3.5 h-3.5" /> Download Report
             </Button>
           </CardHeader>

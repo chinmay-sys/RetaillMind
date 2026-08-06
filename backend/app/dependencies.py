@@ -3,13 +3,13 @@ Authentication & authorization dependencies for protected routes.
 """
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from sqlalchemy.orm import Session
+from jose import JWTError, jwt  # type: ignore # pyright: ignore[reportMissingImports]
+from sqlalchemy.orm import Session  # type: ignore # pyright: ignore[reportMissingImports]
 from app.config import settings
 from app.database import get_db
 from app.models.models import User, UserRole
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 def get_current_user(
     token: str = Depends(oauth2_scheme),

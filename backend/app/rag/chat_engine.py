@@ -216,12 +216,9 @@ class RAGChatEngine:
             return "No supplier data available."
 
         lines = ["Here's the supplier performance overview:\n"]
-        lines.append("| Supplier | Reliability | Lead Time | On-Time | Quality | Rank |")
-        lines.append("|----------|------------|-----------|---------|---------|------|")
         for d in sup_docs:
-            parts = d["content"]
-            name = parts.split(":")[0]
-            lines.append(f"| {parts} |")
+            content = d["content"]
+            lines.append(f"- **{content}**" if ":" in content else f"- {content}")
 
         lines.append("\n*Would you like to compare specific suppliers or generate a procurement plan?*")
         return "\n".join(lines)

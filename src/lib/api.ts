@@ -20,10 +20,15 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || ''
+    const isAuthEndpoint = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register')
+    
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('retailmind_token')
       localStorage.removeItem('retailmind_user')
-      window.location.href = '/auth/login'
+      if (!window.location.pathname.startsWith('/auth')) {
+        window.location.href = '/auth/login'
+      }
     }
     return Promise.reject(error)
   }

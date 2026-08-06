@@ -1,15 +1,51 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { TrendingUp, ArrowUpRight, ArrowDownRight, Tag, Percent, AlertTriangle } from 'lucide-react'
+import { TrendingUp, ArrowUpRight, ArrowDownRight, Tag, Percent, AlertTriangle, Check } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { pricingSuggestions, discountRecommendations } from '@/data/mockData'
+import { pricingSuggestions as initialSuggestions, discountRecommendations as initialDiscounts } from '@/data/mockData'
 import { cn } from '@/lib/utils'
 
 export default function PricingIntelligence() {
-  const marginData = pricingSuggestions.map(p => ({
+  const [suggestions, setSuggestions] = useState(
+    initialSuggestions.map(s => ({ ...s, applied: false }))
+  )
+  const [discounts, setDiscounts] = useState(
+    initialDiscounts.map(d => ({ ...d, applied: false }))
+  )
+  const [feedback, setFeedback] = useState<string | null>(null)
+
+  const handleApplyPrice = (id: number, product: string, newPrice: number, newMargin: number) => {
+    setSuggestions(prev =>
+      prev.map(item =>
+        item.id === id
+          ? {
+              ...item,
+              currentPrice: newPrice,
+              margin: newMargin,
+              applied: true,
+            }
+          : item
+      )
+    )
+    setFeedback(`Applied new price ₹${newPrice.toLocaleString()} to ${product}!`)
+    setTimeout(() => setFeedback(null), 3000)
+  }
+
+  const handleApplyDiscount = (productName: string, newPrice: number) => {
+    setDiscounts(prev =>
+      prev.map(d => d.product === productName ? { ...d, applied: true } : d)
+    )
+    setFeedback(`Applied discount price ₹${newPrice.toLocaleString()} to ${productName}!`)
+    setTimeout(() => setFeedback(null), 3000)
+  }
+
+  const pendingCount = suggestions.filter(s => !s.applied).length
+
+  const marginData = suggestions.map(p => ({
     name: p.product.split(' ').slice(0, 2).join(' '),
     current: p.margin,
     suggested: p.suggestedMargin,
@@ -17,11 +53,26 @@ export default function PricingIntelligence() {
 
   return (
     <div className="page-container">
+      {/* Feedback Banner */}
+      {feedback && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-success-50 border border-success-200 text-success rounded-xl text-sm font-semibold flex items-center justify-between shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-success" />
+            <span>{feedback}</span>
+          </div>
+          <span className="text-xs font-normal text-muted">Updated in real-time</span>
+        </motion.div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { title: 'Avg. Margin', value: '31.2%', icon: Percent, color: 'text-primary', bg: 'bg-primary/10', change: '+2.1%' },
-          { title: 'Price Suggestions', value: '6', icon: Tag, color: 'text-secondary', bg: 'bg-secondary/10', change: 'Pending' },
+          { title: 'Price Suggestions', value: String(pendingCount), icon: Tag, color: 'text-secondary', bg: 'bg-secondary/10', change: pendingCount > 0 ? 'Pending' : 'All Applied' },
           { title: 'Revenue Impact', value: '+₹4.2L', icon: TrendingUp, color: 'text-success', bg: 'bg-success/10', change: 'Projected' },
           { title: 'Competitor Alerts', value: '3', icon: AlertTriangle, color: 'text-warning', bg: 'bg-warning/10', change: 'Active' },
         ].map((stat, i) => (
@@ -60,7 +111,7 @@ export default function PricingIntelligence() {
                   </tr>
                 </thead>
                 <tbody>
-                  {pricingSuggestions.map((item, i) => {
+                  {suggestions.map((item, i) => {
                     const priceDown = item.suggestedPrice < item.currentPrice
                     return (
                       <motion.tr
@@ -71,7 +122,13 @@ export default function PricingIntelligence() {
                         className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                       >
                         <td className="py-3 px-3 font-medium text-foreground">{item.product}</td>
-                        <td className="py-3 px-3 text-right text-muted">₹{item.currentPrice.toLocaleString()}</td>
+                        <td className="py-3 px-3 text-right text-muted">
+                          {item.applied ? (
+                            <span className="line-through text-gray-400">₹{(item.currentPrice * 1.05).toFixed(0)}</span>
+                          ) : (
+                            `₹${item.currentPrice.toLocaleString()}`
+                          )}
+                        </td>
                         <td className="py-3 px-3 text-right">
                           <span className={cn('font-semibold', priceDown ? 'text-danger' : 'text-success')}>
                             ₹{item.suggestedPrice.toLocaleString()}
@@ -94,7 +151,20 @@ export default function PricingIntelligence() {
                           </div>
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <Button variant="outline" size="sm" className="h-7 text-xs">Apply</Button>
+                          {item.applied ? (
+                            <Badge variant="success" className="h-7 px-3 text-xs gap-1">
+                              <Check className="w-3 h-3" /> Applied
+                            </Badge>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleApplyPrice(item.id, item.product, item.suggestedPrice, item.suggestedMargin)}
+                              className="h-7 text-xs hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                            >
+                              Apply
+                            </Button>
+                          )}
                         </td>
                       </motion.tr>
                     )
@@ -121,8 +191,8 @@ export default function PricingIntelligence() {
                   <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0' }} />
-                  <Bar dataKey="current" name="Current" fill="#94A3B8" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="suggested" name="Suggested" fill="#5B5CEB" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="current" name="Current Margin" fill="#94A3B8" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="suggested" name="Suggested Margin" fill="#5B5CEB" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -137,27 +207,45 @@ export default function PricingIntelligence() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {discountRecommendations.map((rec, i) => (
+                {discounts.map((rec, i) => (
                   <motion.div
                     key={rec.product}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.7 + i * 0.1 }}
-                    className="p-4 rounded-xl bg-gray-50 border border-gray-100"
+                    className="p-4 rounded-xl bg-gray-50 border border-gray-100 flex flex-col justify-between gap-3"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-foreground">{rec.product}</h4>
-                      <Badge variant={rec.urgency === 'high' ? 'danger' : rec.urgency === 'medium' ? 'warning' : 'muted'}>
-                        {rec.urgency} priority
-                      </Badge>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-foreground">{rec.product}</h4>
+                        <Badge variant={rec.urgency === 'high' ? 'danger' : rec.urgency === 'medium' ? 'warning' : 'muted'}>
+                          {rec.urgency} priority
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted mb-2">{rec.reason}</p>
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className="text-muted line-through">₹{rec.currentPrice.toLocaleString()}</span>
+                        <span className="font-semibold text-success">₹{rec.newPrice.toLocaleString()}</span>
+                        <Badge variant="danger" className="text-[10px]">-{rec.discountPercent}%</Badge>
+                      </div>
+                      <p className="text-xs text-muted mt-2">{rec.expectedImpact}</p>
                     </div>
-                    <p className="text-xs text-muted mb-2">{rec.reason}</p>
-                    <div className="flex items-center gap-4 text-xs">
-                      <span className="text-muted line-through">₹{rec.currentPrice}</span>
-                      <span className="font-semibold text-success">₹{rec.newPrice}</span>
-                      <Badge variant="danger" className="text-[10px]">-{rec.discountPercent}%</Badge>
+                    <div className="pt-2 border-t border-gray-200/60 flex justify-end">
+                      {rec.applied ? (
+                        <Badge variant="success" className="h-7 px-3 text-xs gap-1">
+                          <Check className="w-3 h-3" /> Discount Live
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleApplyDiscount(rec.product, rec.newPrice)}
+                          className="h-7 text-xs hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                        >
+                          Apply Discount
+                        </Button>
+                      )}
                     </div>
-                    <p className="text-xs text-muted mt-2">{rec.expectedImpact}</p>
                   </motion.div>
                 ))}
               </div>
@@ -168,3 +256,4 @@ export default function PricingIntelligence() {
     </div>
   )
 }
+
