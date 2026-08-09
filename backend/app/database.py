@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.pool import NullPool
 from app.config import settings
 
 # Setup SQLAlchemy Engine — handle SQLite vs PostgreSQL
@@ -11,7 +12,7 @@ engine = create_engine(
     settings.DATABASE_URL,
     connect_args=connect_args,
     pool_pre_ping=True,
-    pool_timeout=30,
+    poolclass=NullPool,  # Fresh connection per request — prevents SQLite lock contention
 )
 
 # Enable WAL mode, busy timeout and foreign keys for SQLite

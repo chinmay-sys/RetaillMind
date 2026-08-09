@@ -35,7 +35,8 @@ class DemandAgent(SpecializedAgent):
         if db is not None:
             try:
                 from app.models.models import Sale, Product
-                now = datetime.now()
+                latest_sale = db.query(func.max(Sale.sale_date)).scalar()
+                now = latest_sale if latest_sale else datetime.now()
                 thirty_days_ago = now - timedelta(days=30)
                 sixty_days_ago = now - timedelta(days=60)
 

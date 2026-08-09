@@ -9,12 +9,12 @@ import { supplierAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const initialSuppliers = [
-  { id: 1, name: 'TechFlow Solutions', category: 'Laptops & PCs', reliability: 96.5, leadTime: 3.2, deliveryScore: 98.2, qualityScore: 97.0, onTimeDelivery: 98.2, totalOrders: 12, rank: 1, contact_person: 'Rajiv Mehta' },
-  { id: 2, name: 'GlobalChip Industries', category: 'Peripherals', reliability: 94.2, leadTime: 4.5, deliveryScore: 96.5, qualityScore: 95.0, onTimeDelivery: 96.5, totalOrders: 8, rank: 2, contact_person: 'Anita Rao' },
-  { id: 3, name: 'PrimeParts Trading', category: 'Audio & Video', reliability: 91.0, leadTime: 4.0, deliveryScore: 93.8, qualityScore: 92.0, onTimeDelivery: 93.8, totalOrders: 5, rank: 3, contact_person: 'Suresh Iyer' },
-  { id: 4, name: 'Nexus Components', category: 'Storage', reliability: 89.0, leadTime: 8.0, deliveryScore: 91.2, qualityScore: 90.0, onTimeDelivery: 91.2, totalOrders: 3, rank: 4, contact_person: 'Deepa Nair' },
-  { id: 5, name: 'SwiftLogix Supply', category: 'Accessories', reliability: 87.0, leadTime: 6.0, deliveryScore: 89.5, qualityScore: 88.0, onTimeDelivery: 89.5, totalOrders: 2, rank: 5, contact_person: 'Arjun Patel' },
-  { id: 6, name: 'MegaSource Direct', category: 'Furniture', reliability: 82.0, leadTime: 10.0, deliveryScore: 85.1, qualityScore: 83.0, onTimeDelivery: 85.1, totalOrders: 1, rank: 6, contact_person: 'Kavita Singh' },
+  { id: 1, name: 'TechFlow Solutions', category: 'Electronics', reliability: 96.5, leadTime: 3.2, deliveryScore: 98.2, qualityScore: 97.0, onTimeDelivery: 98.2, totalOrders: 12, rank: 1, contact_person: 'Rajiv Mehta' },
+  { id: 2, name: 'GlobalChip Industries', category: 'Clothing', reliability: 94.2, leadTime: 4.5, deliveryScore: 96.5, qualityScore: 95.0, onTimeDelivery: 96.5, totalOrders: 8, rank: 2, contact_person: 'Anita Rao' },
+  { id: 3, name: 'PrimeParts Trading', category: 'Beauty', reliability: 91.0, leadTime: 4.0, deliveryScore: 93.8, qualityScore: 92.0, onTimeDelivery: 93.8, totalOrders: 5, rank: 3, contact_person: 'Suresh Iyer' },
+  { id: 4, name: 'Nexus Components', category: 'Sports', reliability: 89.0, leadTime: 8.0, deliveryScore: 91.2, qualityScore: 90.0, onTimeDelivery: 91.2, totalOrders: 3, rank: 4, contact_person: 'Deepa Nair' },
+  { id: 5, name: 'SwiftLogix Supply', category: 'Home', reliability: 87.0, leadTime: 6.0, deliveryScore: 89.5, qualityScore: 88.0, onTimeDelivery: 89.5, totalOrders: 2, rank: 5, contact_person: 'Arjun Patel' },
+  { id: 6, name: 'MegaSource Direct', category: 'Books', reliability: 82.0, leadTime: 10.0, deliveryScore: 85.1, qualityScore: 83.0, onTimeDelivery: 85.1, totalOrders: 1, rank: 6, contact_person: 'Kavita Singh' },
 ]
 
 const supplierLeadTimeData = [

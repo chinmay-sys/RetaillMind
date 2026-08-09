@@ -86,7 +86,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def _log_audit(db: Session, user_id: int, action: str, details: str, ip: str = "unknown"):
-    """Create an audit log entry."""
+    """Create an audit log entry (non-blocking — won't stall login on DB lock)."""
+    import time
     log = AuditLog(
         user_id=user_id,
         action=action,
@@ -94,8 +95,16 @@ def _log_audit(db: Session, user_id: int, action: str, details: str, ip: str = "
         details=details,
         ip_address=ip,
     )
-    db.add(log)
-    db.commit()
+    for attempt in range(3):
+        try:
+            db.add(log)
+            db.commit()
+            return
+        except Exception:
+            db.rollback()
+            if attempt < 2:
+                time.sleep(0.1 * (attempt + 1))
+    # If all retries fail, silently skip audit — login must not be blocked
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)

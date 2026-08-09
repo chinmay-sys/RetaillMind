@@ -20,12 +20,13 @@ async def lifespan(app: FastAPI):
     init_db()
     db = SessionLocal()
     try:
-        from app.models.models import Product
-        # Check if old mock data exists (GLP-X1) or if database is empty
+        from app.models.models import Product, Sale
+        # Check if old mock data exists (GLP-X1) or if database has no products/sales
         old_mock = db.query(Product).filter(Product.sku == "GLP-X1-001").first()
         no_products = db.query(Product).first() is None
+        no_sales = db.query(Sale).first() is None
         
-        if old_mock or no_products:
+        if old_mock or no_products or no_sales:
             logger.info("🌱 Seeding database with real Kaggle Retail dataset...")
             try:
                 from app.seed import seed

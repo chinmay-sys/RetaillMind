@@ -14,13 +14,20 @@ from app.dependencies import get_current_user
 router = APIRouter(prefix="/sales", tags=["Sales & Analytics"])
 
 
+def _get_reference_date(db: Session) -> datetime:
+    """Return the latest sale date in the DB, or now() if no sales exist.
+    This ensures queries work even when seeded data doesn't cover today."""
+    latest = db.query(func.max(Sale.sale_date)).scalar()
+    return latest if latest else datetime.now()
+
+
 @router.get("/analytics")
 def get_sales_analytics(
     days: int = Query(30, ge=1, le=365),
     db: Session = Depends(get_db),
 ):
     """Aggregated sales analytics — revenue, units sold, profit, growth."""
-    now = datetime.now()
+    now = _get_reference_date(db)
     period_start = now - timedelta(days=days)
     prev_start = period_start - timedelta(days=days)
 
@@ -63,7 +70,7 @@ def get_top_products(
     db: Session = Depends(get_db),
 ):
     """Top products by revenue with growth comparison."""
-    now = datetime.now()
+    now = _get_reference_date(db)
     period_start = now - timedelta(days=days)
     prev_start = period_start - timedelta(days=days)
 
@@ -115,7 +122,7 @@ def get_monthly_trend(
     db: Session = Depends(get_db),
 ):
     """Monthly revenue, sales, and profit trend."""
-    now = datetime.now()
+    now = _get_reference_date(db)
     start = now - timedelta(days=months * 30)
 
     results = (
@@ -152,7 +159,7 @@ def get_sales_by_store(
     db: Session = Depends(get_db),
 ):
     """Sales breakdown by store location."""
-    period_start = datetime.now() - timedelta(days=days)
+    period_start = _get_reference_date(db) - timedelta(days=days)
 
     results = (
         db.query(
@@ -183,7 +190,7 @@ def get_sales_by_category(
     db: Session = Depends(get_db),
 ):
     """Sales breakdown by product category."""
-    period_start = datetime.now() - timedelta(days=days)
+    period_start = _get_reference_date(db) - timedelta(days=days)
 
     total_rev = db.query(
         func.coalesce(func.sum(Sale.total_amount), 1)

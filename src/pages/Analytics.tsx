@@ -26,11 +26,30 @@ const defaultMarginData = [
 ]
 
 const defaultTopProducts = [
-  { name: 'White Hanging Heart T-Light Holder', sales: 2847, revenue: 1423500, growth: 15.2 },
-  { name: 'Regency Cakestand 3 Tier', sales: 1890, revenue: 1215000, growth: 28.4 },
-  { name: 'Jumbo Bag Red Retrospot', sales: 1420, revenue: 923000, growth: 19.1 },
-  { name: 'Set 3 Retrospot Tea Tins', sales: 850, revenue: 849900, growth: 16.5 },
-  { name: 'Assorted Colour Bird Ornament', sales: 4521, revenue: 678150, growth: 22.8 },
+  // Electronics
+  { name: 'Samsung Galaxy S24 Ultra', sales: 2847, revenue: 1423500, growth: 15.2, category: 'electronics' },
+  { name: 'Sony WH-1000XM5 Headphones', sales: 1890, revenue: 1215000, growth: 28.4, category: 'electronics' },
+  { name: 'Apple MacBook Air M3', sales: 1420, revenue: 923000, growth: 19.1, category: 'electronics' },
+  // Clothing
+  { name: 'Levi\'s 501 Original Jeans', sales: 2100, revenue: 849900, growth: 16.5, category: 'clothing' },
+  { name: 'Nike Dri-FIT Running Shirt', sales: 1750, revenue: 678150, growth: 22.8, category: 'clothing' },
+  { name: 'Zara Oversized Blazer', sales: 1320, revenue: 594000, growth: 12.3, category: 'clothing' },
+  // Beauty
+  { name: 'Maybelline Fit Me Foundation', sales: 3200, revenue: 512000, growth: 31.5, category: 'beauty' },
+  { name: 'Lakme Absolute Serum', sales: 2600, revenue: 468000, growth: 18.7, category: 'beauty' },
+  { name: 'Nivea Body Lotion SPF 50', sales: 1950, revenue: 390000, growth: 14.2, category: 'beauty' },
+  // Sports
+  { name: 'Yonex Badminton Racket', sales: 980, revenue: 490000, growth: 25.6, category: 'sports' },
+  { name: 'Nike Revolution 6 Shoes', sales: 1450, revenue: 435000, growth: 20.1, category: 'sports' },
+  { name: 'Decathlon Gym Gloves Pro', sales: 2100, revenue: 315000, growth: 17.8, category: 'sports' },
+  // Home
+  { name: 'White Hanging Heart T-Light Holder', sales: 2847, revenue: 569400, growth: 15.2, category: 'home' },
+  { name: 'Regency Cakestand 3 Tier', sales: 1890, revenue: 378000, growth: 28.4, category: 'home' },
+  { name: 'Assorted Colour Bird Ornament', sales: 4521, revenue: 339075, growth: 22.8, category: 'home' },
+  // Books
+  { name: 'Atomic Habits by James Clear', sales: 3200, revenue: 256000, growth: 35.4, category: 'books' },
+  { name: 'Ikigai: The Japanese Secret', sales: 2800, revenue: 196000, growth: 29.1, category: 'books' },
+  { name: 'Rich Dad Poor Dad', sales: 2100, revenue: 147000, growth: 18.6, category: 'books' },
 ]
 
 const defaultCategoryData = [
@@ -143,7 +162,20 @@ export default function Analytics() {
   }, [])
 
 
+  const categoryMultiplier = category === 'electronics' ? 0.40 :
+                             category === 'clothing' ? 0.22 :
+                             category === 'beauty' ? 0.13 :
+                             category === 'sports' ? 0.12 :
+                             category === 'home' ? 0.08 :
+                             category === 'books' ? 0.05 : 1.0
+
   const storeMultiplier = store === 'mumbai' ? 0.35 : store === 'delhi' ? 0.32 : store === 'bangalore' ? 0.28 : 1.0
+
+  const combinedMultiplier = categoryMultiplier * storeMultiplier
+  // If both are "all", combinedMultiplier would be 1.0; if only one is set, apply just that one
+  const effectiveMultiplier = (category !== 'all' && store !== 'all') ? combinedMultiplier :
+                              category !== 'all' ? categoryMultiplier :
+                              store !== 'all' ? storeMultiplier : 1.0
 
   const rawMarginData = timeRange === '7d' ? last7DaysMarginData :
                         timeRange === '30d' ? last30DaysMarginData :
@@ -157,26 +189,23 @@ export default function Analytics() {
 
   const filteredMarginData = rawMarginData.map(d => ({
     ...d,
-    revenue: Math.round(d.revenue * storeMultiplier),
-    cost: Math.round(d.cost * storeMultiplier),
-    profit: Math.round(d.profit * storeMultiplier),
+    revenue: Math.round(d.revenue * effectiveMultiplier),
+    cost: Math.round(d.cost * effectiveMultiplier),
+    profit: Math.round(d.profit * effectiveMultiplier),
   }))
 
   const filteredSalesData = rawSalesData.map(d => ({
     ...d,
-    sales: Math.round(d.sales * storeMultiplier),
-    revenue: Math.round(d.revenue * storeMultiplier),
+    sales: Math.round(d.sales * effectiveMultiplier),
+    revenue: Math.round(d.revenue * effectiveMultiplier),
   }))
 
   const filteredProducts = topProducts.filter(p => {
     if (category === 'all') return true
-    if (category === 'laptops') return p.name.includes('Laptop') || p.name.includes('Monitor')
-    if (category === 'peripherals') return p.name.includes('Keyboard') || p.name.includes('Mouse') || p.name.includes('SSD') || p.name.includes('Hub') || p.name.includes('Chair') || p.name.includes('Lamp')
-    if (category === 'audio') return p.name.includes('Headset') || p.name.includes('Webcam')
-    return true
+    return (p as any).category === category
   }).map(p => ({
     ...p,
-    revenue: Math.round(p.revenue * storeMultiplier),
+    revenue: Math.round(p.revenue * (store !== 'all' ? storeMultiplier : 1.0)),
   }))
 
   const maxProductRevenue = filteredProducts.length > 0 ? Math.max(...filteredProducts.map(p => p.revenue)) : 1
@@ -202,9 +231,12 @@ export default function Analytics() {
           <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Category" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="laptops">Laptops & PCs</SelectItem>
-            <SelectItem value="peripherals">Peripherals</SelectItem>
-            <SelectItem value="audio">Audio & Video</SelectItem>
+            <SelectItem value="electronics">Electronics</SelectItem>
+            <SelectItem value="clothing">Clothing</SelectItem>
+            <SelectItem value="beauty">Beauty</SelectItem>
+            <SelectItem value="sports">Sports</SelectItem>
+            <SelectItem value="home">Home</SelectItem>
+            <SelectItem value="books">Books</SelectItem>
           </SelectContent>
         </Select>
         <Select value={store} onValueChange={setStore}>

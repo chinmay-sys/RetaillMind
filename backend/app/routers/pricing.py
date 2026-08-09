@@ -88,7 +88,8 @@ def get_pricing_recommendations(
         })
 
     # ── Also add slow-moving items (low sales velocity) ──
-    thirty_days_ago = datetime.now() - timedelta(days=30)
+    latest_sale = db.query(func.max(Sale.sale_date)).scalar()
+    thirty_days_ago = (latest_sale if latest_sale else datetime.now()) - timedelta(days=30)
     slow_movers = (
         db.query(
             Product.id, Product.name, Product.selling_price, Product.unit_cost,

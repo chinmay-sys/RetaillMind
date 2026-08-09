@@ -89,7 +89,8 @@ def seed(force: bool = False):
 
 
     # ── 2. USERS ──
-    if not db.query(User).first():
+    users = db.query(User).all()
+    if not users:
         users = [
             User(
                 first_name="Chinmay", last_name="R.",

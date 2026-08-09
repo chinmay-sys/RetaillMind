@@ -63,11 +63,12 @@ Status,Completed
 Source,RetailMind AI Intelligence Platform
 
 Category,Revenue (INR),Units Sold,Growth (%)
-Laptops & PCs,2100000,145,+15.2%
-Peripherals,1800000,312,+22.8%
-Audio & Video,1200000,178,+12.1%
-Storage,780000,167,+9.6%
-Furniture,650000,12,+31.2%
+Electronics,2100000,145,+15.2%
+Clothing,1800000,312,+22.8%
+Beauty,1200000,178,+12.1%
+Sports,780000,167,+9.6%
+Home,650000,89,+18.4%
+Books,420000,215,+31.2%
 
 Total Revenue,INR 6530000
 Total Units Sold,814
@@ -266,7 +267,7 @@ System Confidence,96%
                   <Sparkles className="w-4 h-4" /> AI Executive Summary
                 </div>
                 <p className="text-xs text-muted leading-relaxed">
-                  During this reporting period, RetailMind AI processed over 24,800 transactional events. Overall quarterly revenue increased by <strong>+15.2%</strong> month-over-month, driven primarily by strong consumer demand in <em>Gaming Laptops</em> and <em>Mechanical Keyboards</em>. Inventory health remains robust at <strong>91%</strong> with 3 automated purchase recommendations emitted.
+                  During this reporting period, RetailMind AI processed over 24,800 transactional events. Overall quarterly revenue increased by <strong>+15.2%</strong> month-over-month, driven primarily by strong consumer demand in <em>Electronics</em> and <em>Sports</em> categories. Inventory health remains robust at <strong>91%</strong> with 3 automated purchase recommendations emitted.
                 </p>
               </div>
 
@@ -288,32 +289,46 @@ System Confidence,96%
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       <tr>
-                        <td className="py-2.5 px-3 font-medium">Laptops & PCs</td>
+                        <td className="py-2.5 px-3 font-medium">Electronics</td>
                         <td className="py-2.5 px-3 text-right">₹21,00,000</td>
                         <td className="py-2.5 px-3 text-right">145</td>
                         <td className="py-2.5 px-3 text-right text-success font-medium">32%</td>
                         <td className="py-2.5 px-3 text-center"><Badge variant="success" className="text-[10px]">Optimal</Badge></td>
                       </tr>
                       <tr>
-                        <td className="py-2.5 px-3 font-medium">Peripherals</td>
+                        <td className="py-2.5 px-3 font-medium">Clothing</td>
                         <td className="py-2.5 px-3 text-right">₹18,00,000</td>
                         <td className="py-2.5 px-3 text-right">312</td>
                         <td className="py-2.5 px-3 text-right text-success font-medium">38%</td>
                         <td className="py-2.5 px-3 text-center"><Badge variant="success" className="text-[10px]">High Growth</Badge></td>
                       </tr>
                       <tr>
-                        <td className="py-2.5 px-3 font-medium">Audio & Video</td>
+                        <td className="py-2.5 px-3 font-medium">Beauty</td>
                         <td className="py-2.5 px-3 text-right">₹12,00,000</td>
                         <td className="py-2.5 px-3 text-right">178</td>
                         <td className="py-2.5 px-3 text-right font-medium">30%</td>
                         <td className="py-2.5 px-3 text-center"><Badge variant="default" className="text-[10px]">Stable</Badge></td>
                       </tr>
                       <tr>
-                        <td className="py-2.5 px-3 font-medium">Storage</td>
+                        <td className="py-2.5 px-3 font-medium">Sports</td>
                         <td className="py-2.5 px-3 text-right">₹7,80,000</td>
                         <td className="py-2.5 px-3 text-right">167</td>
                         <td className="py-2.5 px-3 text-right font-medium">29%</td>
                         <td className="py-2.5 px-3 text-center"><Badge variant="default" className="text-[10px]">Stable</Badge></td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 px-3 font-medium">Home</td>
+                        <td className="py-2.5 px-3 text-right">₹6,50,000</td>
+                        <td className="py-2.5 px-3 text-right">89</td>
+                        <td className="py-2.5 px-3 text-right font-medium">27%</td>
+                        <td className="py-2.5 px-3 text-center"><Badge variant="default" className="text-[10px]">Stable</Badge></td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 px-3 font-medium">Books</td>
+                        <td className="py-2.5 px-3 text-right">₹4,20,000</td>
+                        <td className="py-2.5 px-3 text-right">215</td>
+                        <td className="py-2.5 px-3 text-right text-success font-medium">35%</td>
+                        <td className="py-2.5 px-3 text-center"><Badge variant="success" className="text-[10px]">High Growth</Badge></td>
                       </tr>
                     </tbody>
                   </table>
