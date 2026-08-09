@@ -1,13 +1,50 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Users, Clock, Shield, Truck } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { suppliers, supplierLeadTimeData } from '@/data/mockData'
+import { supplierAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
+const initialSuppliers = [
+  { id: 1, name: 'TechFlow Solutions', category: 'Laptops & PCs', reliability: 96.5, leadTime: 3.2, deliveryScore: 98.2, qualityScore: 97.0, onTimeDelivery: 98.2, totalOrders: 12, rank: 1, contact_person: 'Rajiv Mehta' },
+  { id: 2, name: 'GlobalChip Industries', category: 'Peripherals', reliability: 94.2, leadTime: 4.5, deliveryScore: 96.5, qualityScore: 95.0, onTimeDelivery: 96.5, totalOrders: 8, rank: 2, contact_person: 'Anita Rao' },
+  { id: 3, name: 'PrimeParts Trading', category: 'Audio & Video', reliability: 91.0, leadTime: 4.0, deliveryScore: 93.8, qualityScore: 92.0, onTimeDelivery: 93.8, totalOrders: 5, rank: 3, contact_person: 'Suresh Iyer' },
+  { id: 4, name: 'Nexus Components', category: 'Storage', reliability: 89.0, leadTime: 8.0, deliveryScore: 91.2, qualityScore: 90.0, onTimeDelivery: 91.2, totalOrders: 3, rank: 4, contact_person: 'Deepa Nair' },
+  { id: 5, name: 'SwiftLogix Supply', category: 'Accessories', reliability: 87.0, leadTime: 6.0, deliveryScore: 89.5, qualityScore: 88.0, onTimeDelivery: 89.5, totalOrders: 2, rank: 5, contact_person: 'Arjun Patel' },
+  { id: 6, name: 'MegaSource Direct', category: 'Furniture', reliability: 82.0, leadTime: 10.0, deliveryScore: 85.1, qualityScore: 83.0, onTimeDelivery: 85.1, totalOrders: 1, rank: 6, contact_person: 'Kavita Singh' },
+]
+
+const supplierLeadTimeData = [
+  { month: 'Jan', TechFlow: 3.1, GlobalChip: 4.2, PrimeParts: 4.0 },
+  { month: 'Feb', TechFlow: 3.3, GlobalChip: 4.6, PrimeParts: 3.9 },
+  { month: 'Mar', TechFlow: 3.0, GlobalChip: 4.4, PrimeParts: 4.1 },
+  { month: 'Apr', TechFlow: 3.4, GlobalChip: 4.8, PrimeParts: 4.2 },
+  { month: 'May', TechFlow: 3.2, GlobalChip: 4.5, PrimeParts: 4.0 },
+]
+
+import { AgentDomainWidget } from '@/components/shared/AgentDomainWidget'
+
 export default function SupplierIntelligence() {
+  const [suppliers, setSuppliers] = useState(initialSuppliers)
+
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const res = await supplierAPI.scorecard()
+        const list = res.data?.suppliers ?? (Array.isArray(res.data) ? res.data : null)
+        if (list && list.length > 0) {
+          setSuppliers(list)
+        }
+      } catch {
+        // Fallback to default initialSuppliers
+      }
+    }
+    fetchSuppliers()
+  }, [])
+
   const radarData = [
     { metric: 'Reliability', TechFlow: 96, GlobalChip: 94, PrimeParts: 91 },
     { metric: 'Delivery', TechFlow: 98, GlobalChip: 95, PrimeParts: 93 },
@@ -17,7 +54,22 @@ export default function SupplierIntelligence() {
   ]
 
   return (
-    <div className="page-container">
+    <div className="page-container space-y-6">
+      {/* Agent Domain Widget */}
+      <AgentDomainWidget
+        agentId="supplier"
+        agentName="Supplier Intelligence Agent"
+        description="Scores supplier reliability, tracks delivery lead times, and optimizes procurement vendor distribution."
+        color="#EF4444"
+        icon={Users}
+        defaultAnalysis="Evaluated 6 active suppliers on reliability, quality, and lead time SLA. TechFlow Solutions ranked #1 with 98.2% on-time delivery."
+        defaultConfidence={95.1}
+        defaultOutputs={[
+          "Ranked active suppliers based on Multi-Criteria Scoring (AHP)",
+          "Detected lead-time delay risks for tier-2 suppliers",
+          "Generated volume order allocation strategies for Q1 restocking"
+        ]}
+      />
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -112,7 +164,10 @@ export default function SupplierIntelligence() {
                 </thead>
                 <tbody>
                   {suppliers.map((s, i) => {
-                    const overall = ((s.reliability + s.deliveryScore + s.qualityScore) / 3).toFixed(1)
+                    const reliability = Number(s.reliability) || 0
+                    const delivery = Number(s.deliveryScore) || Number(s.onTimeDelivery) || 0
+                    const quality = Number(s.qualityScore) || 0
+                    const overall = ((reliability + delivery + quality) / 3).toFixed(1)
                     return (
                       <motion.tr
                         key={s.id}
@@ -135,26 +190,26 @@ export default function SupplierIntelligence() {
                         <td className="py-3 px-3">
                           <div>
                             <p className="font-medium text-foreground">{s.name}</p>
-                            <p className="text-xs text-muted">{s.totalOrders} orders</p>
+                             <p className="text-xs text-muted">{s.totalOrders} orders</p>
                           </div>
                         </td>
                         <td className="py-3 px-3 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <Progress value={s.reliability} className="w-16 h-1.5" />
-                            <span className="text-xs font-medium">{s.reliability}%</span>
+                            <Progress value={reliability} className="w-16 h-1.5" />
+                             <span className="text-xs font-medium">{reliability}%</span>
                           </div>
                         </td>
-                        <td className="py-3 px-3 text-center hidden md:table-cell">
-                          <span className="text-sm font-medium text-foreground">{s.leadTime} days</span>
+                          <td className="py-3 px-3 text-center hidden md:table-cell">
+                            <span className="text-sm font-medium text-foreground">{typeof s.leadTime === 'number' ? s.leadTime.toFixed(1) : s.leadTime} days</span>
+                         </td>
+                         <td className="py-3 px-3 text-center hidden md:table-cell">
+                           <span className="text-sm font-medium text-foreground">{delivery}%</span>
                         </td>
-                        <td className="py-3 px-3 text-center hidden md:table-cell">
-                          <span className="text-sm font-medium text-foreground">{s.deliveryScore}%</span>
-                        </td>
-                        <td className="py-3 px-3 text-center hidden lg:table-cell">
-                          <span className="text-sm font-medium text-foreground">{s.qualityScore}%</span>
-                        </td>
-                        <td className="py-3 px-3 text-center hidden lg:table-cell">
-                          <span className="text-sm font-medium text-foreground">{s.onTimeDelivery}%</span>
+                         <td className="py-3 px-3 text-center hidden lg:table-cell">
+                           <span className="text-sm font-medium text-foreground">{quality}%</span>
+                         </td>
+                         <td className="py-3 px-3 text-center hidden lg:table-cell">
+                           <span className="text-sm font-medium text-foreground">{delivery}%</span>
                         </td>
                         <td className="py-3 px-3 text-center">
                           <Badge variant={Number(overall) > 92 ? 'success' : Number(overall) > 88 ? 'warning' : 'danger'}>

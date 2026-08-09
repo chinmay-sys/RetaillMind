@@ -9,10 +9,49 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AgentCard } from '@/components/shared/AgentCard'
-import { aiAgents as mockAiAgents } from '@/data/mockData'
 import { aiCenterAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { AgentCard } from '@/components/shared/AgentCard'
+
+const initialAiAgents = [
+  {
+    id: 'demand', name: 'Demand Forecast Agent', domain: 'Sales Prediction',
+    description: 'Analyzes historical sales patterns, seasonal trends, and festival impacts using Prophet + XGBoost ensemble models.',
+    status: 'active' as const, confidence: 94, lastRun: '10 min ago',
+    executionTime: '1.2s', color: '#5B5CEB',
+    latestAnalysis: '30-day demand forecast updated. Diwali seasonal surge multiplier active (+45% weight for next 14 days).',
+    output: '30-day sales forecast updated for top 15 SKUs',
+    icon: TrendingUp,
+  },
+  {
+    id: 'inventory', name: 'Inventory Agent', domain: 'Stock Optimization',
+    description: 'Monitors real-time stock levels across all warehouses, calculates dynamic safety stock thresholds and reorder points.',
+    status: 'active' as const, confidence: 91, lastRun: '5 min ago',
+    executionTime: '0.8s', color: '#10B981',
+    latestAnalysis: 'Flagged 2 critical reorder alerts (Wireless Mouse, USB Hub). 2 overstock items identified for markdown.',
+    output: 'Flagged 2 critical reorder alerts and 2 overstock items',
+    icon: Package,
+  },
+  {
+    id: 'pricing', name: 'Pricing Agent', domain: 'Margin Protection',
+    description: 'Tracks competitor prices across 12 platforms and calculates price elasticity to suggest profit-maximizing adjustments.',
+    status: 'active' as const, confidence: 96, lastRun: '12 min ago',
+    executionTime: '2.4s', color: '#F59E0B',
+    latestAnalysis: 'Gaming Laptop Pro X1 overpriced by ₹5,000 vs market. 4 optimal price adjustments generated with >20% margin maintained.',
+    output: 'Generated 4 optimal price adjustments',
+    icon: DollarSign,
+  },
+  {
+    id: 'supplier', name: 'Supplier Agent', domain: 'Vendor Scoring',
+    description: 'Scores vendor performance on delivery rate, lead time, quality, and cost using MCDA to optimize supplier selection.',
+    status: 'active' as const, confidence: 89, lastRun: '30 min ago',
+    executionTime: '0.7s', color: '#8B5CF6',
+    latestAnalysis: 'Evaluated 6 suppliers. TechFlow Solutions ranked #1 (OTD: 97%). FastShip Logistics flagged for 88% OTD audit.',
+    output: 'Evaluated 6 suppliers; TechFlow Solutions ranked #1',
+    icon: Users,
+  },
+]
+
 
 const getAgentIcon = (id: string) => {
   switch (id) {
@@ -42,10 +81,10 @@ const agentDetailedProfiles: Record<string, {
   executionLogs: { time: string; action: string; status: string; latency: string }[]
   domainRoute: string
 }> = {
-  'demand-forecast': {
+  'demand': {
     fullDescription: 'The Demand Forecast Agent continuously analyzes historical POS transactions, festival seasonality, weather patterns, and macroeconomic indices to generate rolling 30-day demand predictions for all SKUs.',
     architecture: 'Prophet + LSTM Neural Network Ensemble',
-    dataScanned: '24,847 transaction logs across 1,248 active SKUs',
+    dataScanned: '24,847 transaction logs across active SKUs',
     capabilities: [
       'Time-series trend & seasonal decomposition',
       'Festival impact multiplier prediction (Diwali, New Year, Back-to-School)',
@@ -64,10 +103,32 @@ const agentDetailedProfiles: Record<string, {
     ],
     domainRoute: '/app/forecast'
   },
-  'inventory-agent': {
-    fullDescription: 'The Inventory Intelligence Agent monitors real-time stock levels across all regional warehouses (Mumbai, Delhi, Bangalore), calculates dynamic safety stock thresholds, and flags stockout and overstock risks.',
+  'demand-forecast': {
+    fullDescription: 'The Demand Forecast Agent continuously analyzes historical POS transactions, festival seasonality, weather patterns, and macroeconomic indices to generate rolling 30-day demand predictions for all SKUs.',
+    architecture: 'Prophet + LSTM Neural Network Ensemble',
+    dataScanned: '24,847 transaction logs across active SKUs',
+    capabilities: [
+      'Time-series trend & seasonal decomposition',
+      'Festival impact multiplier prediction (Diwali, New Year, Back-to-School)',
+      '95% confidence interval upper & lower bounds estimation',
+      'Anomaly detection on unseasonal sales velocity changes'
+    ],
+    activeRules: [
+      'Flag demand surge alert if 7-day velocity > 2.2x 30-day moving average.',
+      'Incorporate 45% demand spike weight 14 days prior to festival events.',
+      'Auto-recalibrate prediction models every 24 hours at 02:00 UTC.'
+    ],
+    executionLogs: [
+      { time: '10:30 AM', action: 'Daily 30-day demand forecast model training', status: 'SUCCESS', latency: '1.2s' },
+      { time: '08:15 AM', action: 'Diwali seasonal surge multiplier update', status: 'SUCCESS', latency: '0.9s' },
+      { time: '04:00 AM', action: 'Batch feature matrix extraction', status: 'SUCCESS', latency: '1.4s' }
+    ],
+    domainRoute: '/app/forecast'
+  },
+  'inventory': {
+    fullDescription: 'The Inventory Intelligence Agent monitors real-time stock levels across all regional warehouses, calculates dynamic safety stock thresholds, and flags stockout and overstock risks.',
     architecture: 'Dynamic Safety Stock + Economic Order Quantity (EOQ)',
-    dataScanned: '3 regional warehouses • 1,248 SKUs • 18 active reorder flags',
+    dataScanned: '3 regional warehouses • Active SKUs • Active reorder flags',
     capabilities: [
       'Real-time multi-warehouse stock monitoring',
       'Automated Safety Stock & Reorder Point recalculation',
@@ -80,16 +141,38 @@ const agentDetailedProfiles: Record<string, {
       'Calculate EOQ based on 6-month historical holding costs & lead times.'
     ],
     executionLogs: [
-      { time: '10:28 AM', action: 'Safety stock threshold check across 3 warehouses', status: 'SUCCESS', latency: '0.8s' },
-      { time: '09:00 AM', action: 'Overstock clearance candidates identified (2 SKUs)', status: 'SUCCESS', latency: '0.6s' },
+      { time: '10:28 AM', action: 'Safety stock threshold check across warehouses', status: 'SUCCESS', latency: '0.8s' },
+      { time: '09:00 AM', action: 'Overstock clearance candidates identified', status: 'SUCCESS', latency: '0.6s' },
       { time: '05:30 AM', action: 'Warehouse stock sync & inventory health score update', status: 'SUCCESS', latency: '1.1s' }
     ],
     domainRoute: '/app/inventory'
   },
-  'pricing-agent': {
-    fullDescription: 'The Pricing Intelligence Agent tracks competitor prices across 12 digital retail channels, calculates price elasticity of demand, and suggests profit-maximizing price updates.',
+  'inventory-agent': {
+    fullDescription: 'The Inventory Intelligence Agent monitors real-time stock levels across all regional warehouses, calculates dynamic safety stock thresholds, and flags stockout and overstock risks.',
+    architecture: 'Dynamic Safety Stock + Economic Order Quantity (EOQ)',
+    dataScanned: '3 regional warehouses • Active SKUs • Active reorder flags',
+    capabilities: [
+      'Real-time multi-warehouse stock monitoring',
+      'Automated Safety Stock & Reorder Point recalculation',
+      'Stockout urgency prediction (Days-until-stockout)',
+      'Overstock & deadstock identification with markdown guidance'
+    ],
+    activeRules: [
+      'Trigger CRITICAL restock alert when stock < 1.0x safety stock level.',
+      'Flag OVERSTOCK when inventory > 1.5x warehouse max capacity for 30+ days.',
+      'Calculate EOQ based on 6-month historical holding costs & lead times.'
+    ],
+    executionLogs: [
+      { time: '10:28 AM', action: 'Safety stock threshold check across warehouses', status: 'SUCCESS', latency: '0.8s' },
+      { time: '09:00 AM', action: 'Overstock clearance candidates identified', status: 'SUCCESS', latency: '0.6s' },
+      { time: '05:30 AM', action: 'Warehouse stock sync & inventory health score update', status: 'SUCCESS', latency: '1.1s' }
+    ],
+    domainRoute: '/app/inventory'
+  },
+  'pricing': {
+    fullDescription: 'The Pricing Intelligence Agent tracks competitor prices across digital retail channels, calculates price elasticity of demand, and suggests profit-maximizing price updates.',
     architecture: 'Price Elasticity Gradient Boosting + Competitor Scraper Pipeline',
-    dataScanned: '12 competitor platforms • 6 target products • 12 price suggestions',
+    dataScanned: '12 competitor platforms • Active target products • Price suggestions',
     capabilities: [
       'Real-time competitor price discrepancy detection',
       'Price elasticity coefficient modeling (Volume vs Price trade-off)',
@@ -97,7 +180,7 @@ const agentDetailedProfiles: Record<string, {
       'Profit margin protection guardrail enforcement'
     ],
     activeRules: [
-      'Enforce minimum margin guardrail of 20% across all tech categories.',
+      'Enforce minimum margin guardrail of 20% across all categories.',
       'Recommend price match if competitor price is > 5% lower and margin permits.',
       'Cap maximum single-day automated price change to ±15%.'
     ],
@@ -108,32 +191,74 @@ const agentDetailedProfiles: Record<string, {
     ],
     domainRoute: '/app/pricing'
   },
-  'supplier-agent': {
-    fullDescription: 'The Supplier Intelligence Agent scores vendor performance across on-time delivery rates, lead time consistency, quality ratings, and procurement costs to optimize supplier selection.',
-    architecture: 'Multi-Criteria Decision Analysis (MCDA) + Lead-Time Regression',
-    dataScanned: '6 primary suppliers • 847 historical purchase orders',
+  'pricing-agent': {
+    fullDescription: 'The Pricing Intelligence Agent tracks competitor prices across digital retail channels, calculates price elasticity of demand, and suggests profit-maximizing price updates.',
+    architecture: 'Price Elasticity Gradient Boosting + Competitor Scraper Pipeline',
+    dataScanned: '12 competitor platforms • Active target products • Price suggestions',
     capabilities: [
-      'Automated supplier ranking & scorecard generation',
-      'Lead time variance forecasting by vendor',
-      'On-time delivery risk prediction',
-      'Optimal purchase order allocation recommendation'
+      'Real-time competitor price discrepancy detection',
+      'Price elasticity coefficient modeling (Volume vs Price trade-off)',
+      'Automated promotional markdown & clearance pricing calculation',
+      'Profit margin protection guardrail enforcement'
     ],
     activeRules: [
-      'Flag supplier for performance review if on-time delivery drops below 90%.',
-      'Auto-route high-urgency purchase orders to Rank #1 supplier (TechFlow).',
-      'Update supplier lead time estimates based on rolling 90-day performance.'
+      'Enforce minimum margin guardrail of 20% across all categories.',
+      'Recommend price match if competitor price is > 5% lower and margin permits.',
+      'Cap maximum single-day automated price change to ±15%.'
     ],
     executionLogs: [
-      { time: '10:24 AM', action: 'Supplier scorecard recalculation (6 vendors)', status: 'SUCCESS', latency: '1.5s' },
-      { time: '08:30 AM', action: 'Lead time anomaly flag raised for Nexus Components', status: 'SUCCESS', latency: '1.1s' },
-      { time: '02:00 AM', action: 'Purchase order fulfillment history indexing', status: 'SUCCESS', latency: '1.7s' }
+      { time: '10:20 AM', action: 'Competitor price crawl sync completed', status: 'SUCCESS', latency: '2.4s' },
+      { time: '07:45 AM', action: 'Price elasticity model re-indexing', status: 'SUCCESS', latency: '1.8s' },
+      { time: '03:15 AM', action: 'Margin safeguard rule enforcement check', status: 'SUCCESS', latency: '0.9s' }
+    ],
+    domainRoute: '/app/pricing'
+  },
+  'supplier': {
+    fullDescription: 'The Supplier Intelligence Agent scores vendor performance across on-time delivery rates, lead time consistency, quality ratings, and procurement costs to optimize supplier selection.',
+    architecture: 'Multi-Criteria Decision Analysis (MCDA) + Lead-Time Regression',
+    dataScanned: 'Primary suppliers • Historical purchase orders',
+    capabilities: [
+      'Supplier scorecard matrix calculation (Reliability, Delivery, Quality, Cost)',
+      'Lead time variance forecasting',
+      'Automated purchase order routing to top-ranked vendors',
+      'Supplier risk level monitoring'
+    ],
+    activeRules: [
+      'Flag AUDIT alert if supplier On-Time Delivery rate drops below 90%.',
+      'Auto-route urgent restock POs to Rank #1 supplier.',
+      'Recalculate supplier reliability score after every order delivery.'
+    ],
+    executionLogs: [
+      { time: '10:15 AM', action: 'Supplier scorecard recalculation completed', status: 'SUCCESS', latency: '0.7s' },
+      { time: '08:00 AM', action: 'Lead time delay prediction model update', status: 'SUCCESS', latency: '1.1s' }
     ],
     domainRoute: '/app/suppliers'
   },
-  'decision-agent': {
+  'supplier-agent': {
+    fullDescription: 'The Supplier Intelligence Agent scores vendor performance across on-time delivery rates, lead time consistency, quality ratings, and procurement costs to optimize supplier selection.',
+    architecture: 'Multi-Criteria Decision Analysis (MCDA) + Lead-Time Regression',
+    dataScanned: 'Primary suppliers • Historical purchase orders',
+    capabilities: [
+      'Supplier scorecard matrix calculation (Reliability, Delivery, Quality, Cost)',
+      'Lead time variance forecasting',
+      'Automated purchase order routing to top-ranked vendors',
+      'Supplier risk level monitoring'
+    ],
+    activeRules: [
+      'Flag AUDIT alert if supplier On-Time Delivery rate drops below 90%.',
+      'Auto-route urgent restock POs to Rank #1 supplier.',
+      'Recalculate supplier reliability score after every order delivery.'
+    ],
+    executionLogs: [
+      { time: '10:15 AM', action: 'Supplier scorecard recalculation completed', status: 'SUCCESS', latency: '0.7s' },
+      { time: '08:00 AM', action: 'Lead time delay prediction model update', status: 'SUCCESS', latency: '1.1s' }
+    ],
+    domainRoute: '/app/suppliers'
+  },
+  'decision': {
     fullDescription: 'The Decision Intelligence Agent is the master meta-orchestrator. It synthesizes insights from all 4 domain agents, resolves conflicting recommendations, and delivers actionable Human-in-the-Loop decision cards.',
     architecture: 'Multi-Agent Consensus Engine + GPT-4 Chain of Thought (CoT)',
-    dataScanned: 'Synthesized insights from 4 domain agents • 3 active recommendations',
+    dataScanned: 'Synthesized insights from 4 domain agents • Active recommendations',
     capabilities: [
       'Inter-agent recommendation conflict resolution',
       'Net business impact estimation (Revenue loss prevention)',
@@ -146,7 +271,29 @@ const agentDetailedProfiles: Record<string, {
       'Require manager sign-off for all decisions impacting margins > 5%.'
     ],
     executionLogs: [
-      { time: '10:31 AM', action: 'Synthesized 4 agent inputs into 3 priority actions', status: 'SUCCESS', latency: '3.1s' },
+      { time: '10:31 AM', action: 'Synthesized 4 agent inputs into priority actions', status: 'SUCCESS', latency: '3.1s' },
+      { time: '09:15 AM', action: 'Inter-agent conflict check: Passed (0 conflicts)', status: 'SUCCESS', latency: '1.2s' },
+      { time: '06:00 AM', action: 'Daily decision center strategy report generated', status: 'SUCCESS', latency: '2.8s' }
+    ],
+    domainRoute: '/app/ai-center'
+  },
+  'decision-agent': {
+    fullDescription: 'The Decision Intelligence Agent is the master meta-orchestrator. It synthesizes insights from all 4 domain agents, resolves conflicting recommendations, and delivers actionable Human-in-the-Loop decision cards.',
+    architecture: 'Multi-Agent Consensus Engine + GPT-4 Chain of Thought (CoT)',
+    dataScanned: 'Synthesized insights from 4 domain agents • Active recommendations',
+    capabilities: [
+      'Inter-agent recommendation conflict resolution',
+      'Net business impact estimation (Revenue loss prevention)',
+      'Human-in-the-Loop approval workflow management',
+      'Strategic priority ranking (Critical vs High vs Medium)'
+    ],
+    activeRules: [
+      'Suppress price reduction recommendations if inventory status is CRITICAL.',
+      'Prioritize restock actions protecting > ₹1.0L in potential revenue loss.',
+      'Require manager sign-off for all decisions impacting margins > 5%.'
+    ],
+    executionLogs: [
+      { time: '10:31 AM', action: 'Synthesized 4 agent inputs into priority actions', status: 'SUCCESS', latency: '3.1s' },
       { time: '09:15 AM', action: 'Inter-agent conflict check: Passed (0 conflicts)', status: 'SUCCESS', latency: '1.2s' },
       { time: '06:00 AM', action: 'Daily decision center strategy report generated', status: 'SUCCESS', latency: '2.8s' }
     ],
@@ -154,70 +301,17 @@ const agentDetailedProfiles: Record<string, {
   }
 }
 
+
 export default function AIDecisionCenter() {
   const navigate = useNavigate()
-  const [agents, setAgents] = useState(mockAiAgents)
+  const [agents, setAgents] = useState(initialAiAgents)
   const [recommendations, setRecommendations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [actionFeedback, setActionFeedback] = useState<{ id: number; status: string; msg: string } | null>(null)
   const [selectedAgent, setSelectedAgent] = useState<any | null>(null)
   const [refreshingAgentId, setRefreshingAgentId] = useState<string | null>(null)
-
-  const fetchStatus = async () => {
-    setIsLoading(true)
-    try {
-      const res = await aiCenterAPI.status()
-      if (res.data?.agents) {
-        const formatted = res.data.agents.map((ag: any) => ({
-          ...ag,
-          icon: (typeof ag.icon === 'function' || typeof ag.icon === 'object') ? ag.icon : getAgentIcon(ag.id),
-        }))
-        setAgents(formatted)
-      }
-      if (res.data?.recommendations?.length > 0) {
-        setRecommendations(res.data.recommendations)
-      } else {
-        setRecommendations(defaultRecs)
-      }
-    } catch {
-      setAgents(mockAiAgents)
-      setRecommendations(defaultRecs)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchStatus()
-  }, [])
-
-  const handleReview = async (recId: number, action: 'Approved' | 'Modified' | 'Rejected') => {
-    try {
-      await aiCenterAPI.reviewDecision({
-        recommendation_id: recId,
-        action,
-        notes: `Manager selected ${action} at ${new Date().toLocaleTimeString()}`,
-      })
-      setActionFeedback({ id: recId, status: action, msg: `Recommendation ${action} successfully!` })
-    } catch {
-      setActionFeedback({ id: recId, status: action, msg: `Action recorded as ${action}` })
-    }
-
-    setRecommendations(prev =>
-      prev.map(r => r.id === recId ? { ...r, status: action } : r)
-    )
-
-    setTimeout(() => setActionFeedback(null), 3000)
-  }
-
-  const triggerAgentSync = (agentId: string) => {
-    setRefreshingAgentId(agentId)
-    setTimeout(() => {
-      setRefreshingAgentId(null)
-      setActionFeedback({ id: 999, status: 'Synced', msg: `Agent model successfully refreshed!` })
-      setTimeout(() => setActionFeedback(null), 3000)
-    }, 1200)
-  }
+  const [priorityFilter, setPriorityFilter] = useState<string>('All')
+  const [statusFilter, setStatusFilter] = useState<string>('All')
 
   const defaultRecs = [
     {
@@ -255,11 +349,163 @@ export default function AIDecisionCenter() {
     },
   ]
 
-  const recList = recommendations.length > 0 ? recommendations : defaultRecs
-  const activeProfile = selectedAgent ? agentDetailedProfiles[selectedAgent.id] || agentDetailedProfiles['demand-forecast'] : null
+  const fetchStatus = async () => {
+    setIsLoading(true)
+    try {
+      const res = await aiCenterAPI.status()
+      if (res.data?.agents) {
+        const formatted = res.data.agents.map((ag: any) => ({
+          ...ag,
+          icon: (typeof ag.icon === 'function' || typeof ag.icon === 'object') ? ag.icon : getAgentIcon(ag.id),
+        }))
+        setAgents(formatted)
+      }
+      if (res.data?.recommendations?.length > 0) {
+        setRecommendations(res.data.recommendations)
+      } else {
+        setRecommendations(defaultRecs)
+      }
+    } catch {
+      setAgents(initialAiAgents)
+      setRecommendations(defaultRecs)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSyncAll = async () => {
+    setIsLoading(true)
+    try {
+      const res = await aiCenterAPI.runPipeline()
+      if (res.data?.data?.agents) {
+        const formatted = res.data.data.agents.map((ag: any) => ({
+          ...ag,
+          icon: (typeof ag.icon === 'function' || typeof ag.icon === 'object') ? ag.icon : getAgentIcon(ag.id),
+        }))
+        setAgents(formatted)
+      }
+      if (res.data?.data?.recommendations?.length > 0) {
+        setRecommendations(res.data.data.recommendations)
+      }
+      setActionFeedback({ id: 999, status: 'Synced', msg: `Multi-Agent DAG Pipeline executed successfully!` })
+      setTimeout(() => setActionFeedback(null), 3500)
+    } catch {
+      await fetchStatus()
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRunSingleAgent = async (e: React.MouseEvent, agentId: string) => {
+    e.stopPropagation()
+    setRefreshingAgentId(agentId)
+    try {
+      const res = await aiCenterAPI.runAgent(agentId)
+      if (res.data?.agent) {
+        const updated = res.data.agent
+        setAgents(prev => prev.map(a => (a.id === agentId || a.id === updated.id) ? {
+          ...a,
+          ...updated,
+          icon: getAgentIcon(agentId)
+        } : a))
+        setActionFeedback({ id: 999, status: 'Synced', msg: `${updated.name || agentId} executed successfully!` })
+        setTimeout(() => setActionFeedback(null), 3500)
+      }
+    } catch {
+      setActionFeedback({ id: 999, status: 'Synced', msg: `Re-ran agent model for ${agentId}` })
+      setTimeout(() => setActionFeedback(null), 3500)
+    } finally {
+      setRefreshingAgentId(null)
+    }
+  }
+
+  useEffect(() => {
+    fetchStatus()
+  }, [])
+
+  const handleReview = async (recId: number, action: 'Approved' | 'Modified' | 'Rejected') => {
+    try {
+      await aiCenterAPI.reviewDecision({
+        recommendation_id: recId,
+        action,
+        notes: `Manager selected ${action} at ${new Date().toLocaleTimeString()}`,
+      })
+      setActionFeedback({ id: recId, status: action, msg: `Recommendation marked as ${action} successfully!` })
+    } catch {
+      setActionFeedback({ id: recId, status: action, msg: `Action recorded as ${action}` })
+    }
+
+    setRecommendations(prev =>
+      prev.map(r => r.id === recId ? { ...r, status: action } : r)
+    )
+
+    setTimeout(() => setActionFeedback(null), 3500)
+  }
+
+  const triggerAgentSync = async (agentId: string) => {
+    setRefreshingAgentId(agentId)
+    try {
+      const res = await aiCenterAPI.runAgent(agentId)
+      if (res.data?.agent) {
+        const updated = res.data.agent
+        setAgents(prev => prev.map(a => a.id === agentId ? { ...a, ...updated, icon: getAgentIcon(agentId) } : a))
+        if (selectedAgent && selectedAgent.id === agentId) {
+          setSelectedAgent((prev: any) => ({ ...prev, ...updated }))
+        }
+      }
+      setActionFeedback({ id: 999, status: 'Synced', msg: `Agent model successfully refreshed!` })
+      setTimeout(() => setActionFeedback(null), 3500)
+    } catch {
+      setActionFeedback({ id: 999, status: 'Synced', msg: `Agent re-sync completed!` })
+      setTimeout(() => setActionFeedback(null), 3500)
+    } finally {
+      setRefreshingAgentId(null)
+    }
+  }
+
+  // defaultRecs moved above fetchStatus to avoid temporal dead zone
+
+  const recList = (recommendations.length > 0 ? recommendations : defaultRecs).filter(rec => {
+    const pMatch = priorityFilter === 'All' || rec.priority === priorityFilter
+    const sMatch = statusFilter === 'All' || rec.status === statusFilter
+    return pMatch && sMatch
+  })
+
+  const activeProfile = selectedAgent
+    ? agentDetailedProfiles[selectedAgent.id] ||
+      agentDetailedProfiles[`${selectedAgent.id}-agent`] ||
+      agentDetailedProfiles['demand-forecast'] ||
+      agentDetailedProfiles['demand']
+    : null
+
+  const overallConfidence = agents.length > 0
+    ? roundAvg(agents.map(a => a.confidence || 90))
+    : 96
+
+  function roundAvg(arr: number[]) {
+    return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length * 10) / 10
+  }
 
   return (
     <div className="page-container">
+      {/* Global Feedback Banner */}
+      {actionFeedback && actionFeedback.id === 999 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="p-3.5 rounded-xl bg-primary/10 border border-primary/30 text-primary text-xs font-semibold flex items-center justify-between shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary animate-spin" />
+            <span>{actionFeedback.msg}</span>
+          </div>
+          <button onClick={() => setActionFeedback(null)} className="text-primary hover:opacity-75 cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </motion.div>
+      )}
+
       {/* Orchestrator Status */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -291,11 +537,11 @@ export default function AIDecisionCenter() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={fetchStatus}
+                      onClick={handleSyncAll}
                       disabled={isLoading}
-                      className="h-7 px-2 text-xs cursor-pointer"
+                      className="h-7 px-2.5 text-xs cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors"
                     >
-                      <RefreshCw className={cn("w-3.5 h-3.5 mr-1", isLoading && "animate-spin")} />
+                      <RefreshCw className={cn("w-3.5 h-3.5 mr-1.5", isLoading && "animate-spin text-primary")} />
                       Sync All
                     </Button>
                   </div>
@@ -307,7 +553,7 @@ export default function AIDecisionCenter() {
                     </Badge>
                     <Badge variant="default">
                       <Cpu className="w-3 h-3 mr-1" />
-                      96% Orchestrator Confidence
+                      {overallConfidence}% Orchestrator Confidence
                     </Badge>
                   </div>
                 </div>
@@ -345,6 +591,7 @@ export default function AIDecisionCenter() {
         {agents.map((agent, i) => (
           <AgentCard
             key={agent.id}
+            id={agent.id}
             name={agent.name}
             description={agent.description}
             status={agent.status}
@@ -357,6 +604,7 @@ export default function AIDecisionCenter() {
             color={agent.color}
             index={i}
             onClick={() => setSelectedAgent(agent)}
+            onRunAgent={handleRunSingleAgent}
           />
         ))}
       </div>
@@ -369,15 +617,59 @@ export default function AIDecisionCenter() {
       >
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" />
-              Human-in-the-Loop Decision Center
-            </CardTitle>
-            <CardDescription>Synthesized recommendations from all domain agents requiring manager review</CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-primary" />
+                  Human-in-the-Loop Decision Center
+                </CardTitle>
+                <CardDescription>Synthesized recommendations from all domain agents requiring manager review</CardDescription>
+              </div>
+
+              {/* Priority & Status Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-lg text-xs">
+                  <span className="text-[10px] text-muted px-1.5 font-medium">Priority:</span>
+                  {['All', 'Critical', 'High', 'Medium'].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setPriorityFilter(p)}
+                      className={cn(
+                        'px-2 py-0.5 rounded-md text-[11px] font-medium transition-all cursor-pointer',
+                        priorityFilter === p ? 'bg-white text-primary shadow-xs' : 'text-muted hover:text-foreground'
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-lg text-xs">
+                  <span className="text-[10px] text-muted px-1.5 font-medium">Status:</span>
+                  {['All', 'Pending', 'Approved', 'Modified', 'Rejected'].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setStatusFilter(s)}
+                      className={cn(
+                        'px-2 py-0.5 rounded-md text-[11px] font-medium transition-all cursor-pointer',
+                        statusFilter === s ? 'bg-white text-primary shadow-xs' : 'text-muted hover:text-foreground'
+                      )}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </CardHeader>
+
           <CardContent>
             <div className="space-y-4">
-              {recList.map((rec, i) => {
+              {recList.length === 0 ? (
+                <div className="text-center py-8 text-muted text-xs">
+                  No recommendations match the selected filters.
+                </div>
+              ) : recList.map((rec, i) => {
                 const isApproved = rec.status === 'Approved'
                 const isRejected = rec.status === 'Rejected'
                 const isModified = rec.status === 'Modified'
@@ -395,8 +687,8 @@ export default function AIDecisionCenter() {
                     key={rec.id || rec.title}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 * i }}
-                    className={cn('p-5 rounded-xl bg-gray-50 border border-gray-100 border-l-4 transition-all', borderClass)}
+                    transition={{ delay: 0.08 * i }}
+                    className={cn('p-5 rounded-xl bg-gray-50/70 border border-gray-100 border-l-4 transition-all hover:bg-gray-50', borderClass)}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
@@ -473,7 +765,7 @@ export default function AIDecisionCenter() {
       </motion.div>
 
       {/* Full Agent Intelligence Breakdown Modal */}
-      {selectedAgent && activeProfile && (
+      {selectedAgent && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -491,9 +783,10 @@ export default function AIDecisionCenter() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{selectedAgent.name}</h2>
-                  <p className="text-xs opacity-90">{activeProfile.architecture} • Confidence: {selectedAgent.confidence}%</p>
+                  <p className="text-xs opacity-90">{activeProfile?.architecture || 'Multi-Agent AI Model'} • Confidence: {selectedAgent.confidence}%</p>
                 </div>
               </div>
+
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
@@ -542,7 +835,7 @@ export default function AIDecisionCenter() {
                   <Sliders className="w-4 h-4 text-primary" /> Full Agent Description & Scope
                 </h3>
                 <p className="text-xs text-muted leading-relaxed p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  {activeProfile.fullDescription}
+                  {activeProfile?.fullDescription || selectedAgent.description || 'Active AI Agent'}
                 </p>
               </div>
 
@@ -552,7 +845,7 @@ export default function AIDecisionCenter() {
                   <Layers className="w-4 h-4 text-primary" /> Core Analytical Capabilities
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {activeProfile.capabilities.map((cap, i) => (
+                  {activeProfile?.capabilities?.map((cap, i) => (
                     <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100 text-xs text-foreground">
                       <Check className="w-3.5 h-3.5 text-success shrink-0" />
                       <span>{cap}</span>
@@ -567,7 +860,7 @@ export default function AIDecisionCenter() {
                   <Shield className="w-4 h-4 text-warning" /> Enforced Policy Rules & Constraints
                 </h3>
                 <div className="space-y-2">
-                  {activeProfile.activeRules.map((rule, i) => (
+                  {activeProfile?.activeRules?.map((rule, i) => (
                     <div key={i} className="p-3 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs text-foreground flex items-start gap-2">
                       <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 mt-1" />
                       <span>{rule}</span>
@@ -592,7 +885,7 @@ export default function AIDecisionCenter() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {activeProfile.executionLogs.map((log, i) => (
+                      {activeProfile?.executionLogs?.map((log, i) => (
                         <tr key={i}>
                           <td className="py-2.5 px-3 text-muted">{log.time}</td>
                           <td className="py-2.5 px-3 font-medium text-foreground">{log.action}</td>
@@ -606,11 +899,12 @@ export default function AIDecisionCenter() {
                   </table>
                 </div>
               </div>
+
             </div>
 
             {/* Modal Footer */}
             <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-              <span className="text-xs text-muted">Scanned: {activeProfile.dataScanned}</span>
+              <span className="text-xs text-muted">Scanned: {activeProfile?.dataScanned || 'Live database query'}</span>
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
@@ -620,7 +914,7 @@ export default function AIDecisionCenter() {
                 >
                   Close
                 </Button>
-                {activeProfile.domainRoute && (
+                {activeProfile?.domainRoute && (
                   <Button
                     size="sm"
                     onClick={() => {
@@ -634,6 +928,7 @@ export default function AIDecisionCenter() {
                 )}
               </div>
             </div>
+
           </motion.div>
         </div>
       )}

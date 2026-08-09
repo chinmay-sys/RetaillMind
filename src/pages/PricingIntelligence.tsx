@@ -1,22 +1,52 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { TrendingUp, ArrowUpRight, ArrowDownRight, Tag, Percent, AlertTriangle, Check } from 'lucide-react'
+import { TrendingUp, ArrowUpRight, ArrowDownRight, Tag, Percent, AlertTriangle, Check, DollarSign } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { pricingSuggestions as initialSuggestions, discountRecommendations as initialDiscounts } from '@/data/mockData'
+import { pricingAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { AgentDomainWidget } from '@/components/shared/AgentDomainWidget'
+
+const defaultSuggestions = [
+  { id: 1, product: 'White Hanging Heart T-Light Holder', currentPrice: 216, suggestedPrice: 205, competitorPrice: 210, margin: 28, suggestedMargin: 25, impact: '+12% sales volume', confidence: 94 },
+  { id: 2, product: 'Regency Cakestand 3 Tier', currentPrice: 1083, suggestedPrice: 1149, competitorPrice: 1120, margin: 35, suggestedMargin: 38, impact: '+8% revenue', confidence: 91 },
+  { id: 3, product: 'Heart Of Wicker Small', currentPrice: 140, suggestedPrice: 129, competitorPrice: 135, margin: 40, suggestedMargin: 35, impact: '+18% sales volume', confidence: 88 },
+  { id: 4, product: 'Set 3 Retrospot Tea Tins', currentPrice: 420, suggestedPrice: 399, competitorPrice: 405, margin: 32, suggestedMargin: 29, impact: '+15% sales volume', confidence: 86 },
+]
+
+const defaultDiscounts = [
+  { product: 'Popcorn Holder', reason: 'Overstock clearance', currentPrice: 72, discountPercent: 20, newPrice: 58, expectedImpact: 'Clear 150+ excess units in 2 weeks', urgency: 'high' as const },
+  { product: 'Retrospot Tea Towel', reason: 'Overstock clearance', currentPrice: 250, discountPercent: 15, newPrice: 212, expectedImpact: 'Reduce overstock by 200 units', urgency: 'medium' as const },
+]
 
 export default function PricingIntelligence() {
   const [suggestions, setSuggestions] = useState(
-    initialSuggestions.map(s => ({ ...s, applied: false }))
+    defaultSuggestions.map(s => ({ ...s, applied: false }))
   )
   const [discounts, setDiscounts] = useState(
-    initialDiscounts.map(d => ({ ...d, applied: false }))
+    defaultDiscounts.map(d => ({ ...d, applied: false }))
   )
   const [feedback, setFeedback] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const res = await pricingAPI.suggestions()
+        const items = Array.isArray(res.data) ? res.data : (res.data?.suggestions || [])
+        if (items && items.length > 0) {
+          setSuggestions(items.map((s: any) => ({ ...s, applied: false })))
+        }
+      } catch {
+        // Fallback to default
+      }
+    }
+    fetchPricing()
+  }, [])
+
+
 
   const handleApplyPrice = (id: number, product: string, newPrice: number, newMargin: number) => {
     setSuggestions(prev =>
@@ -31,13 +61,17 @@ export default function PricingIntelligence() {
           : item
       )
     )
-    setFeedback(`Applied new price ₹${newPrice.toLocaleString()} to ${product}!`)
+    setFeedback(`Applied optimal price ₹${newPrice.toLocaleString()} to ${product}!`)
     setTimeout(() => setFeedback(null), 3000)
   }
 
   const handleApplyDiscount = (productName: string, newPrice: number) => {
     setDiscounts(prev =>
-      prev.map(d => d.product === productName ? { ...d, applied: true } : d)
+      prev.map(item =>
+        item.product === productName
+          ? { ...item, applied: true }
+          : item
+      )
     )
     setFeedback(`Applied discount price ₹${newPrice.toLocaleString()} to ${productName}!`)
     setTimeout(() => setFeedback(null), 3000)
@@ -52,7 +86,22 @@ export default function PricingIntelligence() {
   }))
 
   return (
-    <div className="page-container">
+    <div className="page-container space-y-6">
+      {/* Agent Domain Widget */}
+      <AgentDomainWidget
+        agentId="pricing"
+        agentName="Pricing Optimization Agent"
+        description="Evaluates competitor pricing, price elasticity, and margin targets to recommend optimal selling prices."
+        color="#F59E0B"
+        icon={DollarSign}
+        defaultAnalysis="Analyzed competitor price feeds across Amazon & Flipkart. Identified 4 optimal price adjustments for maximum gross profit."
+        defaultConfidence={92.5}
+        defaultOutputs={[
+          "Enforced >20% minimum gross margin protection rule",
+          "Calculated price elasticity curve across top retail channels",
+          "Generated promotional discount recommendations for overstock items"
+        ]}
+      />
       {/* Feedback Banner */}
       {feedback && (
         <motion.div

@@ -4,8 +4,15 @@ import { FileText, Download, Calendar, Clock, Eye, FileSpreadsheet, File, Loader
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { reports as initialReports } from '@/data/mockData'
+import { reportsAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
+
+const defaultReports = [
+  { id: 1, title: 'Monthly Executive Retail Performance Report', type: 'executive', date: '2026-01-31', status: 'Ready', pages: 12, highlights: ['Gross Revenue: ₹4.8M (+12.5%)', 'Top Category: Home & Decor (35%)', 'AI Forecast Accuracy: 94.2%'] },
+  { id: 2, title: 'Weekly Inventory Audit & Reorder Strategy', type: 'weekly', date: '2026-01-28', status: 'Ready', pages: 6, highlights: ['2 critical reorder alerts issued', 'Warehouse inventory valuation: ₹67.5L', 'Safety stock buffer maintained at 95%'] },
+  { id: 3, title: 'Demand Forecasting & Seasonality Analysis', type: 'monthly', date: '2026-01-25', status: 'Ready', pages: 8, highlights: ['30-day forecast models tuned', 'Diwali surge expected at +45%', 'Stockout risk reduced by 22%'] },
+]
+
 
 const typeConfig = {
   weekly: { label: 'Weekly', color: 'bg-primary/10 text-primary', icon: Calendar },
@@ -24,7 +31,7 @@ interface ReportItem {
 }
 
 export default function Reports() {
-  const [reportList, setReportList] = useState<ReportItem[]>(initialReports)
+  const [reportList, setReportList] = useState<ReportItem[]>(defaultReports)
   const [isGenerating, setIsGenerating] = useState(false)
   const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null)
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null)

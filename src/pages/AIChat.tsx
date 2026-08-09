@@ -3,9 +3,24 @@ import { motion } from 'framer-motion'
 import { Send, Sparkles, User, Bot, MessageSquare, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { chatHistory, chatSuggestions } from '@/data/mockData'
 import { chatAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
+
+const initialChatHistory = [
+  {
+    id: 1,
+    role: 'assistant' as const,
+    content: 'Hello! I am RetailMind AI Assistant, connected directly to your retail database. Ask me about inventory health, sales performance, price optimization, or supplier reliability.',
+    timestamp: '10:00 AM'
+  }
+]
+
+const chatSuggestions = [
+  'What are my top selling products?',
+  'Which items have critical low stock?',
+  'What is our 30-day forecasted revenue?',
+  'Show supplier performance rankings'
+]
 
 interface Message {
   id: number
@@ -15,7 +30,8 @@ interface Message {
 }
 
 export default function AIChat() {
-  const [messages, setMessages] = useState<Message[]>(chatHistory)
+  const [messages, setMessages] = useState<Message[]>(initialChatHistory)
+
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [streamingText, setStreamingText] = useState('')

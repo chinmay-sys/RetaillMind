@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -8,53 +8,140 @@ import { TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import {
-  revenueChartData, topProducts, categoryData,
-  customerGrowthData, storeComparisonData, profitMarginData
-} from '@/data/mockData'
+import { salesAPI } from '@/lib/api'
+
+const defaultMarginData = [
+  { month: 'Jan', revenue: 3200000, cost: 2240000, profit: 960000, margin: 30 },
+  { month: 'Feb', revenue: 3500000, cost: 2450000, profit: 1050000, margin: 30 },
+  { month: 'Mar', revenue: 3800000, cost: 2660000, profit: 1140000, margin: 30 },
+  { month: 'Apr', revenue: 3600000, cost: 2520000, profit: 1080000, margin: 30 },
+  { month: 'May', revenue: 4100000, cost: 2870000, profit: 1230000, margin: 30 },
+  { month: 'Jun', revenue: 4300000, cost: 2924000, profit: 1376000, margin: 32 },
+  { month: 'Jul', revenue: 3900000, cost: 2652000, profit: 1248000, margin: 32 },
+  { month: 'Aug', revenue: 4200000, cost: 2856000, profit: 1344000, margin: 32 },
+  { month: 'Sep', revenue: 4500000, cost: 3015000, profit: 1485000, margin: 33 },
+  { month: 'Oct', revenue: 4700000, cost: 3149000, profit: 1551000, margin: 33 },
+  { month: 'Nov', revenue: 4600000, cost: 3036000, profit: 1564000, margin: 34 },
+  { month: 'Dec', revenue: 4800000, cost: 3120000, profit: 1680000, margin: 35 },
+]
+
+const defaultTopProducts = [
+  { name: 'White Hanging Heart T-Light Holder', sales: 2847, revenue: 1423500, growth: 15.2 },
+  { name: 'Regency Cakestand 3 Tier', sales: 1890, revenue: 1215000, growth: 28.4 },
+  { name: 'Jumbo Bag Red Retrospot', sales: 1420, revenue: 923000, growth: 19.1 },
+  { name: 'Set 3 Retrospot Tea Tins', sales: 850, revenue: 849900, growth: 16.5 },
+  { name: 'Assorted Colour Bird Ornament', sales: 4521, revenue: 678150, growth: 22.8 },
+]
+
+const defaultCategoryData = [
+  { name: 'Home & Decor', value: 35, revenue: 2400000, color: '#5B5CEB' },
+  { name: 'Kitchen & Dining', value: 28, revenue: 1900000, color: '#7C3AED' },
+  { name: 'Storage & Organizers', value: 20, revenue: 1400000, color: '#14B8A6' },
+  { name: 'Stationery & Craft', value: 17, revenue: 1100000, color: '#EF4444' },
+]
+
+const defaultStoreData = [
+  { store: 'Mumbai Central', revenue: 1250000, sales: 3240, customers: 1870 },
+  { store: 'Delhi NCR', revenue: 1180000, sales: 3050, customers: 1650 },
+  { store: 'Bangalore Tech', revenue: 980000, sales: 2680, customers: 1420 },
+  { store: 'Hyderabad Hub', revenue: 870000, sales: 2310, customers: 1280 },
+]
+
+// Full 12-month chart data
+const profitMarginData = defaultMarginData
+const revenueChartData = [
+  { month: 'Jan', sales: 1240, revenue: 3200000 },
+  { month: 'Feb', sales: 1380, revenue: 3500000 },
+  { month: 'Mar', sales: 1520, revenue: 3800000 },
+  { month: 'Apr', sales: 1430, revenue: 3600000 },
+  { month: 'May', sales: 1680, revenue: 4100000 },
+  { month: 'Jun', sales: 1750, revenue: 4300000 },
+  { month: 'Jul', sales: 1590, revenue: 3900000 },
+  { month: 'Aug', sales: 1700, revenue: 4200000 },
+  { month: 'Sep', sales: 1820, revenue: 4500000 },
+  { month: 'Oct', sales: 1910, revenue: 4700000 },
+  { month: 'Nov', sales: 1870, revenue: 4600000 },
+  { month: 'Dec', sales: 1950, revenue: 4800000 },
+]
 
 const last7DaysMarginData = [
-  { month: 'Jan 20', revenue: 145000, cost: 101500, profit: 43500 },
-  { month: 'Jan 21', revenue: 162000, cost: 113400, profit: 48600 },
-  { month: 'Jan 22', revenue: 158000, cost: 110600, profit: 47400 },
-  { month: 'Jan 23', revenue: 185000, cost: 129500, profit: 55500 },
-  { month: 'Jan 24', revenue: 210000, cost: 147000, profit: 63000 },
-  { month: 'Jan 25', revenue: 235000, cost: 164500, profit: 70500 },
-  { month: 'Jan 26', revenue: 195000, cost: 136500, profit: 58500 },
+  { month: 'Mon', revenue: 148000, cost: 103600, profit: 44400, margin: 30 },
+  { month: 'Tue', revenue: 162000, cost: 113400, profit: 48600, margin: 30 },
+  { month: 'Wed', revenue: 175000, cost: 122500, profit: 52500, margin: 30 },
+  { month: 'Thu', revenue: 158000, cost: 110600, profit: 47400, margin: 30 },
+  { month: 'Fri', revenue: 192000, cost: 130560, profit: 61440, margin: 32 },
+  { month: 'Sat', revenue: 221000, cost: 150280, profit: 70720, margin: 32 },
+  { month: 'Sun', revenue: 184000, cost: 125120, profit: 58880, margin: 32 },
 ]
-
-const last7DaysSalesData = [
-  { month: 'Jan 20', sales: 142, revenue: 145000 },
-  { month: 'Jan 21', sales: 158, revenue: 162000 },
-  { month: 'Jan 22', sales: 151, revenue: 158000 },
-  { month: 'Jan 23', sales: 182, revenue: 185000 },
-  { month: 'Jan 24', sales: 215, revenue: 210000 },
-  { month: 'Jan 25', sales: 240, revenue: 235000 },
-  { month: 'Jan 26', sales: 198, revenue: 195000 },
-]
-
 const last30DaysMarginData = [
-  { month: 'Jan 1-5', revenue: 720000, cost: 504000, profit: 216000 },
-  { month: 'Jan 6-10', revenue: 780000, cost: 546000, profit: 234000 },
-  { month: 'Jan 11-15', revenue: 810000, cost: 567000, profit: 243000 },
-  { month: 'Jan 16-20', revenue: 790000, cost: 553000, profit: 237000 },
-  { month: 'Jan 21-25', revenue: 860000, cost: 602000, profit: 258000 },
-  { month: 'Jan 26-30', revenue: 840000, cost: 588000, profit: 252000 },
+  { month: 'W1', revenue: 980000, cost: 686000, profit: 294000, margin: 30 },
+  { month: 'W2', revenue: 1050000, cost: 735000, profit: 315000, margin: 30 },
+  { month: 'W3', revenue: 1120000, cost: 784000, profit: 336000, margin: 30 },
+  { month: 'W4', revenue: 1150000, cost: 805000, profit: 345000, margin: 30 },
 ]
-
+const last7DaysSalesData = [
+  { month: 'Mon', sales: 420, revenue: 148000 },
+  { month: 'Tue', sales: 480, revenue: 162000 },
+  { month: 'Wed', sales: 510, revenue: 175000 },
+  { month: 'Thu', sales: 460, revenue: 158000 },
+  { month: 'Fri', sales: 580, revenue: 192000 },
+  { month: 'Sat', sales: 670, revenue: 221000 },
+  { month: 'Sun', sales: 540, revenue: 184000 },
+]
 const last30DaysSalesData = [
-  { month: 'Jan 1-5', sales: 720, revenue: 720000 },
-  { month: 'Jan 6-10', sales: 780, revenue: 780000 },
-  { month: 'Jan 11-15', sales: 810, revenue: 810000 },
-  { month: 'Jan 16-20', sales: 790, revenue: 790000 },
-  { month: 'Jan 21-25', sales: 860, revenue: 860000 },
-  { month: 'Jan 26-30', sales: 840, revenue: 840000 },
+  { month: 'W1', sales: 2800, revenue: 980000 },
+  { month: 'W2', sales: 3100, revenue: 1050000 },
+  { month: 'W3', sales: 3350, revenue: 1120000 },
+  { month: 'W4', sales: 3450, revenue: 1150000 },
+]
+const customerGrowthData = [
+  { month: 'Jan', newCustomers: 420, returning: 820 },
+  { month: 'Feb', newCustomers: 480, returning: 900 },
+  { month: 'Mar', newCustomers: 510, returning: 960 },
+  { month: 'Apr', newCustomers: 490, returning: 940 },
+  { month: 'May', newCustomers: 560, returning: 1040 },
+  { month: 'Jun', newCustomers: 610, returning: 1090 },
+  { month: 'Jul', newCustomers: 570, returning: 1010 },
+  { month: 'Aug', newCustomers: 620, returning: 1080 },
+  { month: 'Sep', newCustomers: 680, returning: 1140 },
+  { month: 'Oct', newCustomers: 720, returning: 1190 },
+  { month: 'Nov', newCustomers: 700, returning: 1160 },
+  { month: 'Dec', newCustomers: 750, returning: 1210 },
 ]
 
 export default function Analytics() {
   const [timeRange, setTimeRange] = useState('12m')
   const [category, setCategory] = useState('all')
   const [store, setStore] = useState('all')
+
+  const [topProducts, setTopProducts] = useState(defaultTopProducts)
+  const [categoryData, setCategoryData] = useState(defaultCategoryData)
+  const [storeComparisonData, setStoreComparisonData] = useState(defaultStoreData)
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const [tpRes, catRes, storeRes] = await Promise.all([
+          salesAPI.topProducts(10),
+          salesAPI.byCategory(90),
+          salesAPI.byStore(90)
+        ])
+        if (tpRes.data && Array.isArray(tpRes.data) && tpRes.data.length > 0) {
+          setTopProducts(tpRes.data)
+        }
+        if (catRes.data && Array.isArray(catRes.data) && catRes.data.length > 0) {
+          setCategoryData(catRes.data)
+        }
+        if (storeRes.data && Array.isArray(storeRes.data) && storeRes.data.length > 0) {
+          setStoreComparisonData(storeRes.data)
+        }
+      } catch {
+        // Fallback to default
+      }
+    }
+    fetchAnalytics()
+  }, [])
+
 
   const storeMultiplier = store === 'mumbai' ? 0.35 : store === 'delhi' ? 0.32 : store === 'bangalore' ? 0.28 : 1.0
 

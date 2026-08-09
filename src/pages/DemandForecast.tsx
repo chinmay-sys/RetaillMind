@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { TrendingUp, Download, Calendar, Target, Sparkles, ArrowUpRight } from 'lucide-react'
@@ -6,11 +6,55 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { forecastData, festivalImpact, seasonalData } from '@/data/mockData'
+import { forecastAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
+
+const initialForecastData = Array.from({ length: 30 }, (_, i) => {
+  const date = new Date(2026, 0, i + 1)
+  const base = 150000 + Math.sin(i / 5) * 30000
+  return {
+    date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+    actual: i < 20 ? Math.round(base) : undefined,
+    predicted: Math.round(base + 5000),
+    upperBound: Math.round(base + 25000),
+    lowerBound: Math.round(base - 20000),
+  }
+})
+
+const festivalImpact = [
+  { name: 'Diwali Season', impact: '+45%', period: 'Oct 15 - Nov 15', color: 'text-warning', description: 'Massive surge in retail sales. High demand for home decor & gift sets.' },
+  { name: 'Christmas / New Year', impact: '+38%', period: 'Dec 15 - Jan 5', color: 'text-danger', description: 'Holiday shopping spike. Cake stands & tea tins dominate sales.' },
+  { name: 'Republic Day Sale', impact: '+22%', period: 'Jan 20 - Jan 28', color: 'text-primary', description: 'Steady increase in stationery & home organizer items.' },
+  { name: 'Back to School', impact: '+18%', period: 'Jun 1 - Jun 30', color: 'text-accent', description: 'Craft & paper kit bundles drive bulk customer orders.' },
+]
+
+const seasonalData = [
+  { season: 'Q1 (Jan-Mar)', avgDemand: 10200, trend: 'stable' as const, confidence: 92 },
+  { season: 'Q2 (Apr-Jun)', avgDemand: 11500, trend: 'up' as const, confidence: 89 },
+  { season: 'Q3 (Jul-Sep)', avgDemand: 10800, trend: 'stable' as const, confidence: 91 },
+  { season: 'Q4 (Oct-Dec)', avgDemand: 14200, trend: 'up' as const, confidence: 95 },
+]
+
+import { AgentDomainWidget } from '@/components/shared/AgentDomainWidget'
 
 export default function DemandForecast() {
   const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null)
+  const [forecastData, setForecastData] = useState(initialForecastData)
+
+  useEffect(() => {
+    const fetchForecast = async () => {
+      try {
+        const res = await forecastAPI.predictions(30)
+        const points = Array.isArray(res.data) ? res.data : (res.data?.forecast_points || [])
+        if (points && points.length > 0) {
+          setForecastData(points)
+        }
+      } catch {
+        // Fallback to initial
+      }
+    }
+    fetchForecast()
+  }, [])
 
   const handleDownloadForecastReport = () => {
     const csvContent = `Date,Predicted Demand (INR),Actual Demand (INR),Lower Bound (INR),Upper Bound (INR)
@@ -31,7 +75,23 @@ ${forecastData.map(f => `${f.date},${f.predicted},${f.actual || ''},${f.lowerBou
   }
 
   return (
-    <div className="page-container">
+    <div className="page-container space-y-6">
+      {/* Agent Domain Widget */}
+      <AgentDomainWidget
+        agentId="demand"
+        agentName="Demand Forecast Agent"
+        description="Analyzes historical sales patterns, seasonal trends, and festival impacts using Prophet + XGBoost ensemble models."
+        color="#5B5CEB"
+        icon={TrendingUp}
+        defaultAnalysis="Q4 festival demand spike detected (+28% projected demand for laptops & accessories during festival period)."
+        defaultConfidence={94.2}
+        defaultOutputs={[
+          "Prophet + XGBoost model retrained on historical points",
+          "High confidence interval for next 30-day forecast",
+          "Flagged SKUs with sudden sales velocity increase"
+        ]}
+      />
+
       {downloadFeedback && (
         <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs text-success font-medium bg-success-50 border border-success-200 px-3 py-1.5 rounded-lg shadow-sm mb-2 inline-block">
           ✅ {downloadFeedback}

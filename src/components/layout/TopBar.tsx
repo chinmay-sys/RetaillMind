@@ -13,8 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { notifications as initialNotifications } from '@/data/mockData'
 import { useAuth } from '@/contexts/AuthContext'
+
+const initialNotifications = [
+  { id: 1, title: 'Low Stock Alert', message: 'Heart Of Wicker Small stock below safety level (23 units)', time: '2 min ago', read: false, type: 'warning' },
+  { id: 2, title: 'Forecast Updated', message: 'Q1 2026 demand forecast ready for review', time: '15 min ago', read: false, type: 'info' },
+  { id: 3, title: 'Price Alert', message: 'Competitor price drop detected for Regency Cakestand', time: '1 hour ago', read: true, type: 'danger' },
+  { id: 4, title: 'Delivery Confirmed', message: 'TechFlow Solutions shipment arrived at warehouse', time: '2 hours ago', read: true, type: 'success' },
+]
+
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/app': { title: 'Dashboard', subtitle: 'Welcome back' },

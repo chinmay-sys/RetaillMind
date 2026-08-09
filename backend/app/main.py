@@ -15,24 +15,34 @@ logger = logging.getLogger("retailmind")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: create tables and run seed if DB is empty."""
+    """Startup: create tables and run seed with real Kaggle dataset."""
     logger.info("🚀 Initializing RetailMind AI database...")
     init_db()
-    # Auto-seed on first run
     db = SessionLocal()
     try:
-        from app.models.models import Role
-        if not db.query(Role).first():
-            logger.info("🌱 Empty database detected — running seed...")
-            from app.seed import seed
-            seed()
-            logger.info("✅ Database seeded successfully")
+        from app.models.models import Product
+        # Check if old mock data exists (GLP-X1) or if database is empty
+        old_mock = db.query(Product).filter(Product.sku == "GLP-X1-001").first()
+        no_products = db.query(Product).first() is None
+        
+        if old_mock or no_products:
+            logger.info("🌱 Seeding database with real Kaggle Retail dataset...")
+            try:
+                from app.seed import seed
+                seed(force=True)
+                logger.info("✅ Database seeded with Kaggle dataset successfully")
+            except Exception as se:
+                logger.warning(f"⚠️ Seeding notice: {se}")
         else:
-            logger.info("✅ Database already initialized")
+            logger.info("✅ Database already initialized with Kaggle dataset")
+    except Exception as e:
+        logger.warning(f"⚠️ Lifespan initialization notice: {e}")
     finally:
         db.close()
     yield
+
     logger.info("🛑 Shutting down RetailMind AI")
+
 
 
 app = FastAPI(
@@ -93,6 +103,29 @@ def health_check():
         "database": "connected" if db_ok else "disconnected",
         "version": settings.VERSION,
     }
+
+@app.post("/api/v1/datasets/kaggle/sync")
+@app.get("/api/v1/datasets/kaggle/sync")
+def sync_kaggle_dataset(dataset: str = "ahmdayman/retail-sales-dataset"):
+    """Re-seeds database with local dataset or Kaggle download."""
+    try:
+        from app.seed import seed
+        seed(force=True)
+        return {
+            "status": "success",
+            "message": "Database re-seeded successfully with retail dataset",
+            "dataset": dataset,
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "message": str(e),
+            "detail": traceback.format_exc()
+        }
+
+
+
 
 if __name__ == "__main__":
     import uvicorn

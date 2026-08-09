@@ -11,6 +11,8 @@ from app.models.models import (
     Inventory, InventoryStatus, Sale, PurchaseOrder, Forecast,
     AIRecommendation, RecommendationStatus, Report, AuditLog
 )
+from app.kaggle_loader import load_kaggle_products_and_sales
+
 
 import hashlib
 
@@ -41,55 +43,82 @@ def _hash(pwd: str) -> str:
             pass
     return "$sha256$" + hashlib.sha256(pwd_bytes).hexdigest()
 
-def seed():
+def seed(force: bool = False):
     init_db()
     db = SessionLocal()
 
-    # Skip if already seeded
-    if db.query(Role).first():
+    # Skip if already seeded and force is False
+    if not force and db.query(Role).first():
         print("Database already seeded. Skipping.")
         db.close()
         return
 
+    if force:
+        print("🧹 Force re-seeding database...")
+        try:
+            from app.models.models import PurchaseOrderItem
+            db.query(AuditLog).delete()
+            db.query(AIRecommendation).delete()
+            db.query(Sale).delete()
+            db.query(Forecast).delete()
+            db.query(PurchaseOrderItem).delete()
+            db.query(PurchaseOrder).delete()
+            db.query(Inventory).delete()
+            db.query(Product).delete()
+            db.query(Category).delete()
+            db.query(Report).delete()
+            db.commit()
+            print("  ✅ Database cleared")
+        except Exception as e:
+            print(f"⚠️ Clean deletion warning: {e}")
+            db.rollback()
+
     print("🌱 Seeding RetailMind AI database...")
 
     # ── 1. ROLES ──
-    roles = [
-        Role(name="Admin", description="Full administrative permissions"),
-        Role(name="Retail Manager", description="Store and inventory management access"),
-        Role(name="Business Analyst", description="Analytics and reporting access"),
-    ]
-    db.add_all(roles)
-    db.flush()
-    print("  ✅ Roles created")
+    roles = db.query(Role).all()
+    if not roles:
+        roles = [
+            Role(name="Admin", description="Full administrative permissions"),
+            Role(name="Retail Manager", description="Store and inventory management access"),
+            Role(name="Business Analyst", description="Analytics and reporting access"),
+        ]
+        db.add_all(roles)
+        db.flush()
+        print("  ✅ Roles created")
+
 
     # ── 2. USERS ──
-    users = [
-        User(
-            first_name="Chinmay", last_name="R.",
-            email="chinmay@retailmind.ai",
-            hashed_password=_hash("admin123"),
-            role=UserRole.ADMIN, role_id=roles[0].id,
-            organization="RetailMind Corp"
-        ),
-        User(
-            first_name="Priya", last_name="Sharma",
-            email="priya@retailmind.ai",
-            hashed_password=_hash("manager123"),
-            role=UserRole.RETAIL_MANAGER, role_id=roles[1].id,
-            organization="RetailMind Corp"
-        ),
-        User(
-            first_name="Vikram", last_name="Desai",
-            email="vikram@retailmind.ai",
-            hashed_password=_hash("analyst123"),
-            role=UserRole.BUSINESS_ANALYST, role_id=roles[2].id,
-            organization="RetailMind Corp"
-        ),
-    ]
-    db.add_all(users)
-    db.flush()
-    print("  ✅ Users created")
+    if not db.query(User).first():
+        users = [
+            User(
+                first_name="Chinmay", last_name="R.",
+                email="chinmay@retailmind.ai",
+                hashed_password=_hash("admin123"),
+                role="Admin", role_id=roles[0].id if roles else 1,
+                organization="RetailMind Corp"
+            ),
+            User(
+                first_name="Priya", last_name="Sharma",
+                email="priya@retailmind.ai",
+                hashed_password=_hash("manager123"),
+                role="Retail Manager", role_id=roles[1].id if len(roles) > 1 else 1,
+                organization="RetailMind Corp"
+            ),
+            User(
+                first_name="Vikram", last_name="Desai",
+                email="vikram@retailmind.ai",
+                hashed_password=_hash("analyst123"),
+                role="Business Analyst", role_id=roles[2].id if len(roles) > 2 else 1,
+                organization="RetailMind Corp"
+            ),
+        ]
+        db.add_all(users)
+        db.flush()
+        print("  ✅ Users created")
+    else:
+        print("  ✅ Users already exist")
+
 
     # ── 3. CATEGORIES ──
     categories = [
@@ -135,46 +164,103 @@ def seed():
     db.flush()
     print("  ✅ Suppliers created")
 
-    # ── 5. PRODUCTS ──
-    products_data = [
-        ("GLP-X1-001", "Gaming Laptop Pro X1", 0, 0, 62000, 89999, 84999, 79999, 94999),
-        ("MKB-RGB-002", "Mechanical Keyboard RGB", 1, 1, 3200, 4999, 5499, 3999, 5999),
-        ("WME-003", "Wireless Mouse Elite", 1, 0, 1500, 2499, 2299, 1999, 2999),
-        ("UCH-004", "USB-C Hub Ultra", 4, 2, 2200, 3499, 3299, 2999, 3999),
-        ("WHP-4K-005", "Webcam HD Pro 4K", 2, 1, 4800, 7999, 7499, 6999, 8999),
-        ("MON-4K-006", "27\" 4K Monitor", 1, 0, 22000, 34999, 32999, 29999, 37999),
-        ("NCH-007", "Noise Canceling Headset", 2, 2, 5400, 8999, 9499, 7999, 9999),
-        ("SSD-1T-008", "Portable SSD 1TB", 3, 1, 4200, 6999, 6499, 5999, 7499),
-        ("ECP-009", "Ergonomic Chair Pro", 5, 3, 15000, 24999, 23999, 21999, 27999),
-        ("DLS-010", "Desk Lamp Smart LED", 4, 4, 1800, 2999, 2399, 1999, 3499),
-        ("TBD-011", "Thunderbolt Dock", 4, 0, 8000, 12999, 12499, 10999, 14999),
-        ("GMP-012", "Gaming Mouse Pad XL", 1, 5, 800, 1299, 1199, 999, 1499),
-        ("UBS-14-013", "Ultrabook Slim 14\"", 0, 0, 48000, 64999, 62999, 58999, 69999),
-        ("SPM-5G-014", "Smartphone Pro Max 5G", 0, 1, 55000, 74999, 71999, 68999, 79999),
-        ("SWU-GPS-015", "Smart Watch Ultra GPS", 4, 2, 13000, 18999, 17999, 15999, 20999),
-        ("ANC-EB-016", "ANC Earbuds Pro", 2, 3, 3800, 5999, 5499, 4999, 6499),
-        ("CGM-34-017", "Curved Gaming Monitor 34\"", 1, 0, 36000, 49999, 46999, 43999, 53999),
-        ("WGC-P-018", "Wireless Gamepad Pro", 1, 4, 2500, 3999, 3699, 3299, 4499),
-        ("SMS-019", "Streamer Mic Studio Kit", 2, 1, 4200, 6499, 5999, 5499, 6999),
-        ("WMR-6E-020", "Wi-Fi 6E Mesh Router", 4, 2, 9500, 14999, 13999, 12999, 15999),
-        ("EHD-4T-021", "External Hard Drive 4TB", 3, 1, 5800, 8499, 7999, 7499, 8999),
-        ("FPB-20K-022", "Fast Power Bank 20000mAh", 4, 4, 1500, 2499, 1874, 1699, 2799),
-        ("SSC-2K-023", "Smart Security Cam 2K", 4, 2, 2400, 3799, 3499, 3199, 4199),
-        ("MSD-024", "Motorized Standing Desk", 5, 3, 21000, 32999, 30999, 28999, 35999),
+    # Built-in fallback product catalog (used when Kaggle is unavailable)
+    BUILTIN_PRODUCTS = [
+        # Laptops & PCs
+        {"sku": "TF-LAP-001", "name": "Gaming Laptop Pro X1", "category": "Laptops & PCs", "unit_cost": 62000, "selling_price": 89999, "suggested_price": 84999, "min_price": 68200, "max_price": 116999},
+        {"sku": "TF-LAP-002", "name": "UltraBook Elite 15", "category": "Laptops & PCs", "unit_cost": 48000, "selling_price": 69999, "suggested_price": 66499, "min_price": 52800, "max_price": 90999},
+        {"sku": "TF-LAP-003", "name": "WorkStation Pro Max", "category": "Laptops & PCs", "unit_cost": 75000, "selling_price": 109999, "suggested_price": 104499, "min_price": 82500, "max_price": 142999},
+        {"sku": "TF-LAP-004", "name": "Budget Chromebook 14", "category": "Laptops & PCs", "unit_cost": 18000, "selling_price": 26999, "suggested_price": 25649, "min_price": 19800, "max_price": 35099},
+        {"sku": "TF-PC-001", "name": "Desktop All-in-One 27\"", "category": "Laptops & PCs", "unit_cost": 42000, "selling_price": 61999, "suggested_price": 58899, "min_price": 46200, "max_price": 80599},
+        # Peripherals
+        {"sku": "GC-PER-001", "name": "Mechanical Gaming Keyboard RGB", "category": "Peripherals", "unit_cost": 2800, "selling_price": 4499, "suggested_price": 4274, "min_price": 3080, "max_price": 5849},
+        {"sku": "GC-PER-002", "name": "Wireless Mouse Elite", "category": "Peripherals", "unit_cost": 1200, "selling_price": 1999, "suggested_price": 1899, "min_price": 1320, "max_price": 2599},
+        {"sku": "GC-PER-003", "name": "4K Monitor UHD 32\"", "category": "Peripherals", "unit_cost": 22000, "selling_price": 32999, "suggested_price": 31349, "min_price": 24200, "max_price": 42899},
+        {"sku": "GC-PER-004", "name": "Gaming Mouse Pad XL", "category": "Peripherals", "unit_cost": 400, "selling_price": 699, "suggested_price": 664, "min_price": 440, "max_price": 909},
+        {"sku": "GC-PER-005", "name": "USB-C Hub 7-in-1", "category": "Peripherals", "unit_cost": 1500, "selling_price": 2499, "suggested_price": 2374, "min_price": 1650, "max_price": 3249},
+        # Audio & Video
+        {"sku": "PP-AV-001", "name": "Noise Cancelling Headset Pro", "category": "Audio & Video", "unit_cost": 5500, "selling_price": 8499, "suggested_price": 8074, "min_price": 6050, "max_price": 11049},
+        {"sku": "PP-AV-002", "name": "Webcam 4K AutoFocus", "category": "Audio & Video", "unit_cost": 3200, "selling_price": 4999, "suggested_price": 4749, "min_price": 3520, "max_price": 6499},
+        {"sku": "PP-AV-003", "name": "Bluetooth Speaker 30W", "category": "Audio & Video", "unit_cost": 2800, "selling_price": 4299, "suggested_price": 4084, "min_price": 3080, "max_price": 5589},
+        {"sku": "PP-AV-004", "name": "True Wireless Earbuds ANC", "category": "Audio & Video", "unit_cost": 3500, "selling_price": 5499, "suggested_price": 5224, "min_price": 3850, "max_price": 7149},
+        # Storage
+        {"sku": "NC-STO-001", "name": "NVMe SSD 1TB", "category": "Storage", "unit_cost": 4800, "selling_price": 7499, "suggested_price": 7124, "min_price": 5280, "max_price": 9749},
+        {"sku": "NC-STO-002", "name": "External HDD 2TB", "category": "Storage", "unit_cost": 3200, "selling_price": 4999, "suggested_price": 4749, "min_price": 3520, "max_price": 6499},
+        {"sku": "NC-STO-003", "name": "Portable SSD 512GB", "category": "Storage", "unit_cost": 2800, "selling_price": 4299, "suggested_price": 4084, "min_price": 3080, "max_price": 5589},
+        # Accessories
+        {"sku": "SL-ACC-001", "name": "Smart LED Desk Lamp", "category": "Accessories", "unit_cost": 1200, "selling_price": 1999, "suggested_price": 1899, "min_price": 1320, "max_price": 2599},
+        {"sku": "SL-ACC-002", "name": "Laptop Stand Ergonomic", "category": "Accessories", "unit_cost": 900, "selling_price": 1499, "suggested_price": 1424, "min_price": 990, "max_price": 1949},
+        {"sku": "SL-ACC-003", "name": "Cable Management Kit", "category": "Accessories", "unit_cost": 400, "selling_price": 699, "suggested_price": 664, "min_price": 440, "max_price": 909},
+        {"sku": "SL-ACC-004", "name": "Screen Cleaning Kit", "category": "Accessories", "unit_cost": 200, "selling_price": 349, "suggested_price": 332, "min_price": 220, "max_price": 454},
+        # Furniture
+        {"sku": "MD-FUR-001", "name": "Gaming Chair Pro Ergonomic", "category": "Furniture", "unit_cost": 8500, "selling_price": 13999, "suggested_price": 13299, "min_price": 9350, "max_price": 18199},
+        {"sku": "MD-FUR-002", "name": "Standing Desk Electric 140cm", "category": "Furniture", "unit_cost": 12000, "selling_price": 18999, "suggested_price": 18049, "min_price": 13200, "max_price": 24699},
+        {"sku": "MD-FUR-003", "name": "Monitor Arm Dual VESA", "category": "Furniture", "unit_cost": 2200, "selling_price": 3499, "suggested_price": 3324, "min_price": 2420, "max_price": 4549},
     ]
+
+    # Load real Kaggle dataset
+    kaggle_products, _ = load_kaggle_products_and_sales(max_items=50)
+
     products = []
-    for sku, name, cat_idx, sup_idx, cost, price, suggested, min_p, max_p in products_data:
-        p = Product(
-            sku=sku, name=name,
-            category_id=categories[cat_idx].id,
-            supplier_id=suppliers[sup_idx].id,
-            unit_cost=cost, selling_price=price,
-            suggested_price=suggested, min_price=min_p, max_price=max_p
-        )
-        products.append(p)
-    db.add_all(products)
-    db.flush()
-    print("  ✅ Products created")
+    if kaggle_products:
+        print(f"  📥 Seeding {len(kaggle_products)} real products from Kaggle dataset...")
+        cat_map = {}
+        for kp in kaggle_products:
+            cname = kp['category']
+            if cname not in cat_map:
+                cat_obj = db.query(Category).filter(Category.name == cname).first()
+                if not cat_obj:
+                    cat_obj = Category(name=cname, description=f"Kaggle Retail Category: {cname}")
+                    db.add(cat_obj)
+                    db.flush()
+                cat_map[cname] = cat_obj
+
+        for i, kp in enumerate(kaggle_products):
+            sup_idx = i % len(suppliers)
+            p = Product(
+                sku=kp['sku'],
+                name=kp['name'],
+                category_id=cat_map[kp['category']].id,
+                supplier_id=suppliers[sup_idx].id,
+                unit_cost=kp['unit_cost'],
+                selling_price=kp['selling_price'],
+                suggested_price=kp['suggested_price'],
+                min_price=kp['min_price'],
+                max_price=kp['max_price']
+            )
+            products.append(p)
+        db.add_all(products)
+        db.flush()
+        print("  ✅ Real Kaggle dataset products created successfully")
+    else:
+        print("  📦 Kaggle unavailable — using built-in product catalog...")
+        # Build category map from existing categories
+        cat_map = {c.name: c for c in db.query(Category).all()}
+        for i, bp in enumerate(BUILTIN_PRODUCTS):
+            cname = bp['category']
+            if cname not in cat_map:
+                cat_obj = Category(name=cname, description=f"Retail Category: {cname}")
+                db.add(cat_obj)
+                db.flush()
+                cat_map[cname] = cat_obj
+            sup_idx = i % len(suppliers)
+            p = Product(
+                sku=bp['sku'],
+                name=bp['name'],
+                category_id=cat_map[cname].id,
+                supplier_id=suppliers[sup_idx].id,
+                unit_cost=bp['unit_cost'],
+                selling_price=bp['selling_price'],
+                suggested_price=bp['suggested_price'],
+                min_price=bp['min_price'],
+                max_price=bp['max_price']
+            )
+            products.append(p)
+        db.add_all(products)
+        db.flush()
+        print(f"  ✅ {len(products)} built-in products created successfully")
+
+
 
     # ── 6. INVENTORY ──
     inventory_data = [
@@ -204,17 +290,19 @@ def seed():
         (18, 20, 30, 80, "Warehouse C-1", InventoryStatus.CRITICAL),
     ]
     inventories = []
-    for i, (stock, safety, reorder, max_s, loc, status) in enumerate(inventory_data):
-        inv = Inventory(
-            product_id=products[i].id,
-            current_stock=stock, safety_stock=safety,
-            reorder_point=reorder, max_stock=max_s,
-            warehouse_location=loc, status=status
-        )
-        inventories.append(inv)
-    db.add_all(inventories)
-    db.flush()
-    print("  ✅ Inventory created")
+    if products:
+        for i, (stock, safety, reorder, max_s, loc, status) in enumerate(inventory_data):
+            p = products[i % len(products)]
+            inv = Inventory(
+                product_id=p.id,
+                current_stock=stock, safety_stock=safety,
+                reorder_point=reorder, max_stock=max_s,
+                warehouse_location=loc, status=status
+            )
+            inventories.append(inv)
+        db.add_all(inventories)
+        db.flush()
+        print("  ✅ Inventory created")
 
     # ── 7. SALES — 2 years of daily synthetic sales data ──
     stores = ["Mumbai Central", "Delhi NCR", "Bangalore Tech", "Hyderabad Hub", "Pune Digital"]
@@ -244,7 +332,8 @@ def seed():
         # Each product gets 0-5 sales per day
         for prod_idx, product in enumerate(products):
             # Base daily sales varies by product popularity
-            base_sales = [3, 5, 7, 4, 3, 2, 4, 3, 1, 5, 1, 6][prod_idx]
+            base_sales = [3, 5, 7, 4, 3, 2, 4, 3, 1, 5, 1, 6][prod_idx % 12]
+
             qty = max(0, int(base_sales * seasonal * weekend_mult + random.gauss(0, 1.5)))
             
             if qty > 0:

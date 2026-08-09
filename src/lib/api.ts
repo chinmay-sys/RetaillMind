@@ -68,6 +68,7 @@ export const inventoryAPI = {
 // ─── Forecast API ───────────────────────────────────────
 export const forecastAPI = {
   thirtyDay: () => api.get('/forecast/30-day'),
+  predictions: (days = 30) => api.get('/forecast/30-day'),
   predict: (productId: number, days = 30) =>
     api.post('/forecast/predict', { product_id: productId, days }),
 }
@@ -75,7 +76,9 @@ export const forecastAPI = {
 // ─── Pricing API ────────────────────────────────────────
 export const pricingAPI = {
   recommendations: () => api.get('/pricing/recommendations'),
+  suggestions: () => api.get('/pricing/recommendations'),
 }
+
 
 // ─── Supplier API ───────────────────────────────────────
 export const supplierAPI = {
@@ -87,9 +90,12 @@ export const supplierAPI = {
 // ─── AI Decision Center API ─────────────────────────────
 export const aiCenterAPI = {
   status: () => api.get('/ai-center/status'),
+  runPipeline: () => api.post('/ai-center/pipeline/run'),
+  runAgent: (agentId: string) => api.post(`/ai-center/agents/${agentId}/run`),
   reviewDecision: (data: { recommendation_id: number; action: string; notes?: string }) =>
     api.post('/ai-center/decisions/review', data),
 }
+
 
 // ─── Chat API ───────────────────────────────────────────
 export const chatAPI = {
@@ -110,6 +116,11 @@ export const auditAPI = {
     return api.get(`/audit/logs?${params}`)
   },
   stats: () => api.get('/audit/stats'),
+}
+
+// ─── Kaggle Dataset API ─────────────────────────────────
+export const kaggleAPI = {
+  sync: (dataset = 'ahmdayman/retail-sales-dataset') => api.post(`/datasets/kaggle/sync?dataset=${dataset}`),
 }
 
 export default api
