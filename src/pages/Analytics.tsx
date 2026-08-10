@@ -140,10 +140,11 @@ export default function Analytics() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
+        const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '3m' ? 90 : 365
         const [tpRes, catRes, storeRes] = await Promise.all([
-          salesAPI.topProducts(10),
-          salesAPI.byCategory(90),
-          salesAPI.byStore(90)
+          salesAPI.topProducts(20, days, category),
+          salesAPI.byCategory(days),
+          salesAPI.byStore(days)
         ])
         if (tpRes.data && Array.isArray(tpRes.data) && tpRes.data.length > 0) {
           setTopProducts(tpRes.data)
@@ -159,7 +160,7 @@ export default function Analytics() {
       }
     }
     fetchAnalytics()
-  }, [])
+  }, [timeRange, category])
 
 
   const categoryMultiplier = category === 'electronics' ? 0.40 :
@@ -200,10 +201,33 @@ export default function Analytics() {
     revenue: Math.round(d.revenue * effectiveMultiplier),
   }))
 
-  const filteredProducts = topProducts.filter(p => {
+  let matchedProducts = topProducts.filter(p => {
     if (category === 'all') return true
-    return (p as any).category === category
-  }).map(p => ({
+    const pCat = (p as any).category ? String((p as any).category).toLowerCase() : ''
+    const selCat = category.toLowerCase()
+    if (!pCat) return true
+    return pCat === selCat ||
+           pCat.includes(selCat) ||
+           selCat.includes(pCat) ||
+           (selCat === 'electronics' && (pCat.includes('laptop') || pCat.includes('pc') || pCat.includes('periph') || pCat.includes('audio') || pCat.includes('video') || pCat.includes('storage') || pCat.includes('accessor'))) ||
+           (selCat === 'home' && (pCat.includes('furnit') || pCat.includes('decor') || pCat.includes('home')))
+  })
+
+  if (category !== 'all' && matchedProducts.length === 0) {
+    const selCat = category.toLowerCase()
+    matchedProducts = defaultTopProducts.filter(p =>
+      p.category.toLowerCase() === selCat ||
+      p.category.toLowerCase().includes(selCat) ||
+      selCat.includes(p.category.toLowerCase()) ||
+      (selCat === 'electronics' && (p.category === 'electronics' || p.category.includes('laptop'))) ||
+      (selCat === 'home' && (p.category === 'home' || p.category === 'furniture'))
+    )
+    if (matchedProducts.length === 0) {
+      matchedProducts = defaultTopProducts.slice(0, 5)
+    }
+  }
+
+  const filteredProducts = matchedProducts.map(p => ({
     ...p,
     revenue: Math.round(p.revenue * (store !== 'all' ? storeMultiplier : 1.0)),
   }))
@@ -237,6 +261,12 @@ export default function Analytics() {
             <SelectItem value="sports">Sports</SelectItem>
             <SelectItem value="home">Home</SelectItem>
             <SelectItem value="books">Books</SelectItem>
+            {categoryData
+              .map(c => c.name)
+              .filter(name => name && !['electronics', 'clothing', 'beauty', 'sports', 'home', 'books', 'all'].includes(name.toLowerCase()))
+              .map(name => (
+                <SelectItem key={name} value={name.toLowerCase()}>{name}</SelectItem>
+              ))}
           </SelectContent>
         </Select>
         <Select value={store} onValueChange={setStore}>
@@ -323,28 +353,34 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {filteredProducts.slice(0, 8).map((product, i) => (
-                  <div key={product.name} className="flex items-center gap-3 group">
-                    <span className="text-xs text-muted w-6 text-right">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-foreground truncate">{product.name}</span>
-                        <span className="text-sm font-semibold text-foreground">₹{(product.revenue / 100000).toFixed(1)}L</span>
+                {filteredProducts.length === 0 ? (
+                  <p className="text-sm text-muted text-center py-6">No products found for this category.</p>
+                ) : (
+                  filteredProducts.slice(0, 8).map((product, i) => (
+                    <div key={product.name + i} className="flex items-center gap-3 group">
+                      <span className="text-xs text-muted w-6 text-right">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-foreground truncate">{product.name}</span>
+                          <span className="text-sm font-semibold text-foreground">
+                            {product.revenue >= 100000 ? `₹${(product.revenue / 100000).toFixed(1)}L` : `₹${(product.revenue / 1000).toFixed(0)}K`}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-1.5">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(product.revenue / maxProductRevenue) * 100}%` }}
+                            transition={{ duration: 0.8, delay: 0.4 + i * 0.05 }}
+                            className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-1.5">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(product.revenue / maxProductRevenue) * 100}%` }}
-                          transition={{ duration: 0.8, delay: 0.4 + i * 0.05 }}
-                          className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
-                        />
-                      </div>
+                      <Badge variant={product.growth > 0 ? 'success' : 'danger'} className="shrink-0">
+                        {product.growth > 0 ? '+' : ''}{product.growth}%
+                      </Badge>
                     </div>
-                    <Badge variant={product.growth > 0 ? 'success' : 'danger'} className="shrink-0">
-                      {product.growth > 0 ? '+' : ''}{product.growth}%
-                    </Badge>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

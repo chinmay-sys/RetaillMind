@@ -46,7 +46,8 @@ export const authAPI = {
 // ─── Sales / Analytics API ──────────────────────────────
 export const salesAPI = {
   analytics: (days = 30) => api.get(`/sales/analytics?days=${days}`),
-  topProducts: (limit = 10, days = 90) => api.get(`/sales/top-products?limit=${limit}&days=${days}`),
+  topProducts: (limit = 10, days = 90, category = 'all') =>
+    api.get(`/sales/top-products?limit=${limit}&days=${days}${category && category !== 'all' ? `&category=${encodeURIComponent(category)}` : ''}`),
   monthlyTrend: (months = 12) => api.get(`/sales/monthly-trend?months=${months}`),
   byStore: (days = 90) => api.get(`/sales/by-store?days=${days}`),
   byCategory: (days = 90) => api.get(`/sales/by-category?days=${days}`),

@@ -3,7 +3,7 @@ Sales analytics router — real DB queries for revenue, top products, trends.
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract, desc
+from sqlalchemy import func, extract, desc, or_
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -67,6 +67,7 @@ def get_sales_analytics(
 def get_top_products(
     limit: int = Query(10, ge=1, le=50),
     days: int = Query(90, ge=1, le=365),
+    category: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     """Top products by revenue with growth comparison."""
@@ -74,17 +75,38 @@ def get_top_products(
     period_start = now - timedelta(days=days)
     prev_start = period_start - timedelta(days=days)
 
-    # Current period top products
-    current_products = (
+    query = (
         db.query(
             Product.id,
             Product.name,
+            Category.name.label("category_name"),
             func.sum(Sale.quantity).label("sales"),
             func.sum(Sale.total_amount).label("revenue"),
         )
         .join(Sale, Sale.product_id == Product.id)
+        .outerjoin(Category, Category.id == Product.category_id)
         .filter(Sale.sale_date >= period_start)
-        .group_by(Product.id, Product.name)
+    )
+
+    if category and category.lower() != "all":
+        cat_lower = category.lower()
+        category_terms = [cat_lower]
+        if cat_lower == "electronics":
+            category_terms.extend(["laptops & pcs", "peripherals", "audio & video", "storage", "accessories", "tech"])
+        elif cat_lower == "home":
+            category_terms.extend(["furniture", "home & decor", "decor", "kitchen"])
+        elif cat_lower == "books":
+            category_terms.extend(["stationery & craft", "stationery", "books"])
+
+        conditions = []
+        for term in category_terms:
+            conditions.append(func.lower(Category.name).contains(term))
+            conditions.append(func.lower(term).contains(func.lower(Category.name)))
+
+        query = query.filter(or_(*conditions))
+
+    current_products = (
+        query.group_by(Product.id, Product.name, Category.name)
         .order_by(desc("revenue"))
         .limit(limit)
         .all()
@@ -111,6 +133,7 @@ def get_top_products(
             "sales": int(p.sales),
             "revenue": round(float(p.revenue), 2),
             "growth": growth,
+            "category": p.category_name if p.category_name else "General",
         })
 
     return results

@@ -179,12 +179,14 @@ class PricingAgent(SpecializedAgent):
 
                 gaps = [
                     p for p in products_with_suggested
-                    if p.suggested_price and abs(p.selling_price - p.suggested_price) >= 50
+                    if p.suggested_price and abs(float(getattr(p, 'selling_price', 0.0)) - float(getattr(p, 'suggested_price', 0.0))) >= 50
                 ]
 
                 if gaps:
                     top_gap = gaps[0]
-                    diff = top_gap.selling_price - (top_gap.suggested_price or top_gap.selling_price)
+                    sp = float(getattr(top_gap, 'selling_price', 0.0))
+                    sug = float(getattr(top_gap, 'suggested_price', sp))
+                    diff = sp - sug
                     direction = "overpriced" if diff > 0 else "underpriced"
                     latest = f"Found {len(gaps)} pricing discrepancies. Key item: '{top_gap.name}' is {direction} by ₹{abs(diff):,.0f}."
                 else:
@@ -242,7 +244,8 @@ class SupplierAgent(SpecializedAgent):
 
                 if total > 0:
                     top = suppliers[0]
-                    avg_rel = round(sum(s.reliability_score for s in suppliers) / total, 1)
+                    scores = [float(getattr(s, 'reliability_score', 0.0)) for s in suppliers]
+                    avg_rel = round(sum(scores) / total, 1)
                     at_risk = [s for s in suppliers if s.reliability_score < 90 or s.on_time_delivery_rate < 90]
 
                     latest = f"Top supplier: '{top.name}' (Rank #1, {top.on_time_delivery_rate}% on-time delivery)."
