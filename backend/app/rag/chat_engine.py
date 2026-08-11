@@ -285,13 +285,44 @@ class RAGChatEngine:
         return "\n".join(lines)
 
     def query(self, user_message: str) -> Dict[str, Any]:
-        """Main query method: retrieve context and generate response."""
-        context_docs = self._retrieve_context(user_message)
-        response = self._generate_response(user_message, context_docs)
+        """
+        Main RAG Query Entry Point:
+        1. Retrieves exact transactional numbers from SQL DB.
+        2. Retrieves unstructured retail business policies from Qdrant Vector Store.
+        3. Invokes LLM Service Layer (Gemini / OpenAI) for grounded response generation.
+        """
+        from app.rag.rag_engine import qdrant_rag_engine
+        from app.services.llm_service import llm_service
+
+        # 1. SQL Relational Context (Transactional DB)
+        sql_docs = self._retrieve_context(user_message)
+        sql_text = "\n".join([f"- [{d['type']}] {d['content']}" for d in sql_docs])
+
+        # 2. Qdrant Vector Search Context (Unstructured Policies)
+        rag_docs = qdrant_rag_engine.search_knowledge(user_message, top_k=2)
+        rag_text = "\n".join([f"- [Policy: {d.get('title')}] {d.get('content')}" for d in rag_docs])
+
+        combined_context = f"=== TRANSACTIONAL DATABASE CONTEXT (SQL) ===\n{sql_text}\n\n=== RETAIL BUSINESS POLICIES (QDRANT VECTORS) ===\n{rag_text}"
+
+        system_instruction = (
+            "You are RetailMind AI Assistant, an enterprise retail intelligence platform. "
+            "Use the provided SQL database metrics and Qdrant policy context to provide clear, actionable business answers. "
+            "Format your response in clean Markdown with clear headings and bullet points. Cite numbers accurately."
+        )
+
+        response_text = llm_service.generate_response(
+            prompt=user_message,
+            system_instruction=system_instruction,
+            context=combined_context
+        )
+
+        sources = [d['content'][:90] + "..." for d in sql_docs[:3]]
+        sources.extend([f"Policy: {d.get('title')}" for d in rag_docs[:2]])
 
         return {
-            "response": response,
+            "response": response_text,
             "conversation_id": f"conv-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
-            "sources": [d["content"][:100] + "..." for d in context_docs[:5]],
+            "sources": sources,
             "timestamp": datetime.now().strftime("%I:%M %p"),
         }
+

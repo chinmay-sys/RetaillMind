@@ -78,6 +78,8 @@ export const forecastAPI = {
 export const pricingAPI = {
   recommendations: () => api.get('/pricing/recommendations'),
   suggestions: () => api.get('/pricing/recommendations'),
+  updatePrice: (productId: number, sellingPrice: number) =>
+    api.patch(`/pricing/products/${productId}/price?selling_price=${sellingPrice}`),
 }
 
 
@@ -107,6 +109,7 @@ export const chatAPI = {
 // ─── Reports API ────────────────────────────────────────
 export const reportsAPI = {
   list: () => api.get('/reports/list'),
+  generateCSV: (reportId: number) => api.get(`/reports/generate/${reportId}`, { responseType: 'blob' }),
 }
 
 // ─── Audit API ──────────────────────────────────────────

@@ -413,31 +413,10 @@ class AIOrchestrator:
         }
 
     def run_full_pipeline(self, db: Optional[Session] = None) -> Dict[str, Any]:
-        """Runs the entire multi-agent DAG pipeline."""
-        demand_res = self.demand_agent.analyze(db=db)
-        inventory_res = self.inventory_agent.analyze(db=db)
-        pricing_res = self.pricing_agent.analyze(db=db)
-        supplier_res = self.supplier_agent.analyze(db=db)
-
-        agent_outputs = {
-            "demand": demand_res,
-            "inventory": inventory_res,
-            "pricing": pricing_res,
-            "supplier": supplier_res
-        }
-
-        decision_res = self.decision_agent.orchestrate(agent_outputs, db=db)
-
-        return {
-            "agents": [
-                {**demand_res, "id": self.demand_agent.agent_id, "name": self.demand_agent.name, "description": self.demand_agent.description, "color": self.demand_agent.color},
-                {**inventory_res, "id": self.inventory_agent.agent_id, "name": self.inventory_agent.name, "description": self.inventory_agent.description, "color": self.inventory_agent.color},
-                {**pricing_res, "id": self.pricing_agent.agent_id, "name": self.pricing_agent.name, "description": self.pricing_agent.description, "color": self.pricing_agent.color},
-                {**supplier_res, "id": self.supplier_agent.agent_id, "name": self.supplier_agent.name, "description": self.supplier_agent.description, "color": self.supplier_agent.color},
-                {**decision_res, "id": self.decision_agent.agent_id, "name": self.decision_agent.name, "description": self.decision_agent.description, "color": self.decision_agent.color},
-            ],
-            "recommendations": decision_res["recommendations"]
-        }
+        """Runs the entire multi-agent LangGraph state graph pipeline."""
+        from app.agents.graph import langgraph_orchestrator
+        return langgraph_orchestrator.run_pipeline(db=db)
 
 
 ai_orchestrator = AIOrchestrator()
+

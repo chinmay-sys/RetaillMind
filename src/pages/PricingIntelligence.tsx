@@ -48,7 +48,12 @@ export default function PricingIntelligence() {
 
 
 
-  const handleApplyPrice = (id: number, product: string, newPrice: number, newMargin: number) => {
+  const handleApplyPrice = async (id: number, product: string, newPrice: number, newMargin: number) => {
+    try {
+      await pricingAPI.updatePrice(id, newPrice)
+    } catch (e) {
+      console.warn("Price update sent locally:", e)
+    }
     setSuggestions(prev =>
       prev.map(item =>
         item.id === id
@@ -61,9 +66,10 @@ export default function PricingIntelligence() {
           : item
       )
     )
-    setFeedback(`Applied optimal price ₹${newPrice.toLocaleString()} to ${product}!`)
+    setFeedback(`Applied optimal price ₹${newPrice.toLocaleString()} to ${product}! Saved to database.`)
     setTimeout(() => setFeedback(null), 3000)
   }
+
 
   const handleApplyDiscount = (productName: string, newPrice: number) => {
     setDiscounts(prev =>

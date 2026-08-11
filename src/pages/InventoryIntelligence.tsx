@@ -243,7 +243,7 @@ export default function InventoryIntelligence() {
                 Total Catalog: <strong>{itemList.length} SKUs</strong>
               </Badge>
               <Badge variant="success" className="text-xs py-1 px-3">
-                Total Value: <strong>₹{itemList.reduce((acc, item) => acc + (item.currentStock * item.price), 0).toLocaleString()}</strong>
+                Total Value: <strong>₹{itemList.reduce((acc, item) => acc + ((item.currentStock || 0) * (item.price || 0)), 0).toLocaleString()}</strong>
               </Badge>
             </div>
           </CardHeader>
@@ -251,8 +251,10 @@ export default function InventoryIntelligence() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {itemList.map((item, i) => {
                 const config = statusConfig[item.status] || statusConfig.healthy
+                const unitPrice = Number(item.price) || 0
+                const currentQty = Number(item.currentStock) || 0
 
-                const totalValue = item.currentStock * item.price
+                const totalValue = currentQty * unitPrice
                 const isLow = item.status === 'critical' || item.status === 'warning'
                 const location = i % 3 === 0 ? 'Warehouse A-1 (Rack 4B)' : i % 3 === 1 ? 'Warehouse B-2 (Rack 12A)' : 'Warehouse C-1 (Rack 2A)'
 
@@ -286,11 +288,11 @@ export default function InventoryIntelligence() {
                       {/* Metrics */}
                       <div className="grid grid-cols-3 gap-2 text-center mb-3">
                         <div className="p-1.5 bg-gray-50 rounded-lg">
-                          <p className="text-xs font-bold text-foreground">{item.currentStock}</p>
+                          <p className="text-xs font-bold text-foreground">{currentQty}</p>
                           <p className="text-[9px] text-muted">Current Stock</p>
                         </div>
                         <div className="p-1.5 bg-gray-50 rounded-lg">
-                          <p className="text-xs font-bold text-foreground">₹{item.price.toLocaleString()}</p>
+                          <p className="text-xs font-bold text-foreground">₹{unitPrice.toLocaleString()}</p>
                           <p className="text-[9px] text-muted">Unit Price</p>
                         </div>
                         <div className="p-1.5 bg-gray-50 rounded-lg">

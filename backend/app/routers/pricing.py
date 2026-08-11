@@ -133,3 +133,23 @@ def get_pricing_recommendations(
         "suggestions": suggestions,
         "discounts": discounts,
     }
+
+
+@router.patch("/products/{product_id}/price")
+def update_product_price(
+    product_id: int,
+    selling_price: float,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Updates selling price for a product in the database."""
+    from fastapi import HTTPException
+    prod = db.query(Product).filter(Product.id == product_id).first()
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    prod.selling_price = float(selling_price)
+    db.commit()
+    db.refresh(prod)
+    return {"status": "success", "product_id": prod.id, "new_price": prod.selling_price}
+

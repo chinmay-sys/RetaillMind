@@ -110,14 +110,66 @@ def review_decision(
         rec.reviewed_at = datetime.now(timezone.utc)
         rec.manager_notes = review.notes
 
-    # Create audit log entry regardless of mock or DB persistence
+        # ── STATEFUL BUSINESS ACTION EXECUTION UPON APPROVAL ──
+        if action_val == "Approved":
+            from app.models.models import PurchaseOrder, PurchaseOrderItem, Product, Supplier
+            
+            # Action 1: Restock recommendation -> Create Purchase Order
+            if rec.category == "Inventory" or "Restock" in rec.title or "Reorder" in rec.title:
+                supplier = db.query(Supplier).order_by(Supplier.rank).first()
+                supplier_id = supplier.id if supplier else 1
+                
+                # Fetch product
+                prod = None
+                if rec.action_data and "product_id" in rec.action_data:
+                    prod = db.query(Product).filter(Product.id == rec.action_data["product_id"]).first()
+                if not prod:
+                    prod = db.query(Product).first()
+
+                if prod:
+                    po_num = f"PO-AUTO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                    qty = rec.action_data.get("quantity", 200) if rec.action_data else 200
+                    total = round(prod.unit_cost * qty, 2)
+                    
+                    new_po = PurchaseOrder(
+                        po_number=po_num,
+                        supplier_id=supplier_id,
+                        total_cost=total,
+                        status="Approved",
+                        order_date=datetime.now(timezone.utc),
+                        expected_delivery=datetime.now(timezone.utc) + timedelta(days=4)
+                    )
+                    db.add(new_po)
+                    db.flush()
+                    
+                    po_item = PurchaseOrderItem(
+                        purchase_order_id=new_po.id,
+                        product_id=prod.id,
+                        quantity=qty,
+                        unit_price=prod.unit_cost,
+                        total_price=total
+                    )
+                    db.add(po_item)
+
+            # Action 2: Pricing recommendation -> Update Product selling price
+            elif rec.category == "Pricing" or "Price" in rec.title:
+                if rec.action_data and "product_id" in rec.action_data and "new_price" in rec.action_data:
+                    prod = db.query(Product).filter(Product.id == rec.action_data["product_id"]).first()
+                    if prod:
+                        prod.selling_price = float(rec.action_data["new_price"])
+                elif rec.action_data and "product_id" in rec.action_data:
+                    prod = db.query(Product).filter(Product.id == rec.action_data["product_id"]).first()
+                    if prod and prod.suggested_price:
+                        prod.selling_price = prod.suggested_price
+
+    # Create audit log entry
     audit = AuditLog(
         user_id=current_user.id,
         action=f"Recommendation {action_val}",
         entity_type="AIRecommendation",
         entity_id=review.recommendation_id,
-        details=f"Manager {action_val} recommendation #{review.recommendation_id}"
-                + (f" | Notes: {review.notes}" if review.notes else ""),
+        details=f"Manager {action_val} recommendation #{review.recommendation_id} | Business action executed."
+                + (f" Notes: {review.notes}" if review.notes else ""),
     )
     db.add(audit)
     db.commit()
@@ -126,7 +178,8 @@ def review_decision(
         "status": "success",
         "recommendation_id": review.recommendation_id,
         "new_status": action_val,
-        "message": f"Recommendation #{review.recommendation_id} marked as '{action_val}'. Saved to audit log.",
+        "message": f"Recommendation #{review.recommendation_id} marked as '{action_val}'. Business action executed and saved to DB.",
         "reviewed_by": f"{current_user.first_name} {current_user.last_name}",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+

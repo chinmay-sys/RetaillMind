@@ -56,22 +56,17 @@ def seed(force: bool = False):
     if force:
         print("🧹 Force re-seeding database...")
         try:
-            from app.models.models import PurchaseOrderItem
-            db.query(AuditLog).delete()
-            db.query(AIRecommendation).delete()
-            db.query(Sale).delete()
-            db.query(Forecast).delete()
-            db.query(PurchaseOrderItem).delete()
-            db.query(PurchaseOrder).delete()
-            db.query(Inventory).delete()
-            db.query(Product).delete()
-            db.query(Category).delete()
-            db.query(Report).delete()
-            db.commit()
-            print("  ✅ Database cleared")
+            from app.database import engine
+            from app.models.models import Base
+            db.close()
+            Base.metadata.drop_all(bind=engine)
+            Base.metadata.create_all(bind=engine)
+            db = SessionLocal()
+            print("  ✅ Database schema recreated cleanly")
         except Exception as e:
-            print(f"⚠️ Clean deletion warning: {e}")
-            db.rollback()
+            print(f"⚠️ Clean recreate warning: {e}")
+            db = SessionLocal()
+
 
     print("🌱 Seeding RetailMind AI database...")
 
@@ -133,6 +128,20 @@ def seed(force: bool = False):
     db.add_all(categories)
     db.flush()
     print("  ✅ Categories created")
+
+    # ── 3.5 CUSTOMERS ──
+    from app.models.models import Customer
+    customers_data = [
+        Customer(name="Aarav Sharma", email="aarav@gmail.com", phone="+91 98210 12345", city="Mumbai", customer_type="Retail", total_purchases=45000.0),
+        Customer(name="Ananya Patel", email="ananya@yahoo.com", phone="+91 98210 23456", city="Delhi", customer_type="Retail", total_purchases=68000.0),
+        Customer(name="Rohan Verma", email="rohan@outlook.com", phone="+91 98210 34567", city="Bangalore", customer_type="Wholesale", total_purchases=240000.0),
+        Customer(name="Diya Iyer", email="diya@techcorp.in", phone="+91 98210 45678", city="Hyderabad", customer_type="Corporate", total_purchases=520000.0),
+        Customer(name="Kabir Nair", email="kabir@gmail.com", phone="+91 98210 56789", city="Pune", customer_type="Retail", total_purchases=31000.0),
+    ]
+    db.add_all(customers_data)
+    db.flush()
+    print("  ✅ Customers created")
+
 
     # ── 4. SUPPLIERS ──
     suppliers = [

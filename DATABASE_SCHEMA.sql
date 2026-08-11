@@ -36,6 +36,19 @@ CREATE TABLE categories (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 3.5 CUSTOMERS TABLE
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    phone VARCHAR(50),
+    city VARCHAR(100) DEFAULT 'Mumbai',
+    customer_type VARCHAR(50) DEFAULT 'Retail',
+    total_purchases FLOAT DEFAULT 0.0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
 -- 4. SUPPLIERS TABLE
 CREATE TABLE suppliers (
     id SERIAL PRIMARY KEY,

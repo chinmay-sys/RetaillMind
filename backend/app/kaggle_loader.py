@@ -104,7 +104,47 @@ def _parse_dataset_file(target_file: str, max_items: int = 50):
                 suggested_price = round(selling_price * 0.95, 2)
                 
                 t_id = str(getattr(row, sku_attr, f'TXN-{1000 + i}')).strip() if sku_attr else f"TXN-{1000 + i}"
-                item_name = f"{c_name} Item {i + 1}"
+                # Realistic Product Name Catalog per Category
+                CATALOG = {
+                    "Electronics": [
+                        "Gaming Laptop Pro X1", "UltraBook Elite 15", "WorkStation Pro Max 27\"",
+                        "Budget Chromebook 14", "Desktop All-in-One PC", "4K Monitor UHD 32\"",
+                        "Mechanical Gaming Keyboard RGB", "Wireless Mouse Elite", "USB-C Hub 7-in-1",
+                        "Noise Cancelling Headset Pro", "Webcam 4K AutoFocus", "NVMe SSD 1TB High-Speed",
+                        "External HDD 2TB Portable", "Smart LED Desk Lamp", "Laptop Stand Ergonomic"
+                    ],
+                    "Clothing": [
+                        "Men's Slim Fit Denim Jacket", "Women's Designer Cotton Saree", "Casual Polo T-Shirt Pack",
+                        "Athletic Running Shoes Pro", "Leather Bifold Wallet Classic", "Sports Zip-Up Hoodie",
+                        "Designer Silk Scarf", "Winter Fleece Jacket", "Formal Leather Shoes"
+                    ],
+                    "Beauty": [
+                        "Organic Skin Revitalizing Serum", "Matte Finish Liquid Lipstick Set",
+                        "Hydrating Herbal Face Cream", "Vitamin C Brightening Facial Wash", "Luxury Botanical Perfume 100ml",
+                        "Argan Oil Hair Treatment", "Exfoliating Scrub Lotion"
+                    ],
+                    "Home & Decor": [
+                        "White Hanging Heart T-Light Holder", "Heart Of Wicker Basket Small",
+                        "Smart LED Ambient Light Strip", "Ergonomic Memory Foam Pillow", "Ceramic Decorative Vase Set"
+                    ],
+                    "Kitchen & Dining": [
+                        "Regency Cakestand 3 Tier", "Set 3 Retrospot Tea Tins", "Smart Electric Pressure Cooker",
+                        "Stainless Steel Chef Knife Set", "Non-Stick Frying Pan 28cm"
+                    ]
+                }
+                
+                # Retrieve specific product name or cycle from catalog
+                cat_items = CATALOG.get(c_name, CATALOG.get("Electronics", []))
+                if cat_items:
+                    item_name = cat_items[i % len(cat_items)]
+                else:
+                    MASTER = [
+                        "Gaming Laptop Pro X1", "UltraBook Elite 15", "Mechanical Gaming Keyboard RGB",
+                        "Wireless Mouse Elite", "4K Monitor UHD 32\"", "Noise Cancelling Headset Pro",
+                        "NVMe SSD 1TB High-Speed", "Smart LED Desk Lamp", "Laptop Stand Ergonomic",
+                        "Men's Slim Fit Denim Jacket", "Organic Skin Revitalizing Serum"
+                    ]
+                    item_name = MASTER[i % len(MASTER)]
 
                 extracted_products.append({
                     "sku": f"RSD-{t_id}",
@@ -117,6 +157,7 @@ def _parse_dataset_file(target_file: str, max_items: int = 50):
                     "max_price": round(selling_price * 1.3, 2),
                     "stock": random.randint(20, 400)
                 })
+
         else:
             # Format from shahnawaj9/online-retail
             grouped = df.groupby(desc_col).first().reset_index()

@@ -6,9 +6,10 @@
 ![TypeScript](https://img.shields.io/badge/Language-TypeScript_5-3178C6?style=for-the-badge&logo=typescript)
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)
 ![Python](https://img.shields.io/badge/Language-Python_3.11-3776AB?style=for-the-badge&logo=python)
-![LangGraph](https://img.shields.io/badge/AI_Agents-LangGraph-7C3AED?style=for-the-badge)
-![Prophet](https://img.shields.io/badge/ML-Prophet_%2B_XGBoost-14B8A6?style=for-the-badge)
-![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql)
+![LangGraph](https://img.shields.io/badge/AI_Agents-LangGraph_StateGraph-7C3AED?style=for-the-badge)
+![XGBoost](https://img.shields.io/badge/ML-XGBoost_Regressor-14B8A6?style=for-the-badge)
+![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-FF6000?style=for-the-badge)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_/_SQLite-4169E1?style=for-the-badge&logo=postgresql)
 
 ---
 
@@ -16,7 +17,7 @@
 
 **RetailMind AI** is an enterprise-grade AI decision intelligence platform designed to assist retail managers and business leaders in making data-driven operational decisions.
 
-> ⚠️ **Note**: RetailMind AI is **NOT** a standard inventory management software. It is a **Business Decision Intelligence Platform** leveraging Machine Learning, Agentic AI, Retrieval Augmented Generation (RAG), and Explainable AI (XAI) to transform raw retail data into actionable, human-in-the-loop decisions.
+> ⚠️ **Note**: RetailMind AI is an **Agentic Business Decision Intelligence Platform** leveraging XGBoost Machine Learning, LangGraph StateGraph Multi-Agent Orchestration, Qdrant Vector Retrieval Augmented Generation (RAG), and Explainable AI (XAI) to transform raw retail data into actionable, human-in-the-loop decisions.
 
 ---
 
@@ -31,15 +32,16 @@
 
 ### **Backend**
 - **Framework**: FastAPI (Python 3.11)
-- **ORM & DB**: SQLAlchemy & PostgreSQL
+- **ORM & DB**: SQLAlchemy & PostgreSQL / SQLite
 - **Data Validation**: Pydantic v2
 - **Authentication**: OAuth2 + JWT (JSON Web Tokens) with Password Hashing (bcrypt)
 
 ### **Machine Learning & Agentic AI**
-- **Forecasting Pipeline**: Prophet (Seasonality & Trend) + XGBoost (Lag & Rolling Feature Regressor)
-- **Multi-Agent Orchestrator**: LangGraph / LangChain Framework
-- **RAG & Vector Database**: Qdrant Vector Store + LangChain Retriever
-- **LLM Integration**: OpenAI GPT-4 / Google Gemini API
+- **Demand Forecasting Engine**: XGBoost Regressor (Lags 7/14/30, Rolling Means/Stds, Festival Flags, MAE/RMSE/MAPE evaluation, `.joblib` model artifact persistence)
+- **Multi-Agent Orchestrator**: LangGraph StateGraph (`RetailAIState` orchestrating Demand, Inventory, Pricing, Supplier, and Decision Agents)
+- **RAG & Vector Database**: Qdrant Vector Store (Hybrid retrieval: SQL for numeric transaction metrics + Qdrant vectors for retail policies)
+- **LLM Integration**: Unified LLM Service Layer (Google Gemini / OpenAI API)
+
 
 ---
 
@@ -140,53 +142,87 @@ RetailMind Ai/
 
 ---
 
-## 💻 Installation & Setup Guide
+## 💻 Step-by-Step Manual Execution Guide
 
 ### **Prerequisites**
 - **Node.js**: v18.0 or higher
 - **Python**: v3.10 or higher
-- **PostgreSQL** *(optional for local live backend)*
 
 ---
 
-### **1. Frontend Setup**
-
-```bash
-# Navigate to the project root
-cd "RetailMind Ai"
-
-# Install frontend dependencies
-npm install
-
-# Start the Vite development server
-npm run dev
-```
-Open `http://localhost:5173` in your browser.
-
----
-
-### **2. Backend Setup (FastAPI)**
+### **1. Backend Execution Steps**
 
 ```bash
 # Navigate to the backend directory
-cd backend
+cd "c:\Users\chinmay\OneDrive\Desktop\projects\RetailMind Ai\backend"
 
-# Create a Python virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Linux/macOS:
-source venv/bin/activate
-
-# Install backend dependencies
+# Step A: Install Python dependencies
 pip install -r requirements.txt
 
-# Start the FastAPI server with live reload
+# Step B: Seed Database (Populates 2 years of sales data, products, suppliers, & AI cards)
+# Note: If updating from an older schema version, delete retailmind.db first or run force mode:
+python run_seed.py --force
+
+# Step C: Train and persist XGBoost ML Demand Forecast Model artifact (.joblib)
+python -m app.ml.train
+
+# Step D: (Optional) Run Pytest unit and integration test suite
+python -m pytest
+
+# Step E: Start the FastAPI Backend Server
 uvicorn app.main:app --reload --port 8000
 ```
-Interactive API documentation will be available at `http://localhost:8000/docs`.
+> 💡 *The backend API will be running at `http://localhost:8000` (Interactive Swagger docs available at `http://localhost:8000/docs`).*
+
+---
+
+### **2. Frontend Execution Steps**
+
+In a **new terminal window**:
+
+```bash
+# Navigate to the project root directory
+cd "c:\Users\chinmay\OneDrive\Desktop\projects\RetailMind Ai"
+
+# Step A: Install Node.js packages
+npm install
+
+# Step B: Start Vite React Dev Server
+npm run dev
+```
+> 💡 *The frontend dashboard will be running at `http://localhost:5173`.*
+
+---
+
+### 🔑 Default Login Credentials
+
+Open your browser at `http://localhost:5173` and log in with any seeded account:
+
+| Role | Email | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `chinmay@retailmind.ai` | `admin123` | Full administrative control & AI settings |
+| **Retail Manager** | `priya@retailmind.ai` | `manager123` | Inventory, Pricing & Human-in-the-Loop decision review |
+| **Business Analyst** | `vikram@retailmind.ai` | `analyst123` | Demand forecasting & executive reporting |
+
+---
+
+### **3. Production Docker Deployment (PostgreSQL + Qdrant + FastAPI)**
+
+If you prefer running via Docker containers:
+
+```bash
+# Navigate to root workspace
+cd "c:\Users\chinmay\OneDrive\Desktop\projects\RetailMind Ai"
+
+# Start PostgreSQL, Qdrant Vector Store, and FastAPI backend
+docker-compose up --build -d
+
+# Seed PostgreSQL Database inside container
+docker exec -it retailmind_backend python run_seed.py --force
+
+# Train XGBoost Model inside container
+docker exec -it retailmind_backend python -m app.ml.train
+```
 
 ---
 
@@ -198,11 +234,13 @@ Interactive API documentation will be available at `http://localhost:8000/docs`.
 | `POST` | `/api/v1/auth/register` | Register a new Retail Manager / Admin |
 | `GET` | `/api/v1/ai-center/status` | Fetch real-time agent status & recommendations |
 | `POST` | `/api/v1/ai-center/decisions/review` | Human-in-the-Loop decision review (*Approve/Modify/Reject*) |
-| `GET` | `/api/v1/forecast/30-day` | Fetch 30-day Prophet+XGBoost demand predictions |
+| `GET` | `/api/v1/forecast/30-day` | Fetch 30-day XGBoost demand predictions & error metrics |
 | `POST` | `/api/v1/chat/query` | RAG-powered query endpoint for business decision chat |
 | `GET` | `/api/v1/inventory/status` | Fetch inventory health & stock counts |
 | `GET` | `/api/v1/pricing/recommendations` | Fetch price elasticity & discount strategies |
+| `PATCH` | `/api/v1/pricing/products/{id}/price` | Persist selling price update to database |
 | `GET` | `/api/v1/suppliers/scorecard` | Fetch supplier performance rankings & lead times |
+| `GET` | `/api/v1/reports/generate/{id}` | Export dynamic CSV reports from database records |
 
 ---
 
@@ -210,4 +248,5 @@ Interactive API documentation will be available at `http://localhost:8000/docs`.
 
 - **Project Title**: RetailMind AI — An Agentic Retail Decision Intelligence Platform
 - **Domain**: Artificial Intelligence, Machine Learning, Full Stack Engineering
-- **Key Concepts Demonstrated**: Multi-Agent Orchestration (LangGraph), Ensemble Time-Series Forecasting (Prophet + XGBoost), Vector RAG Retrieval (Qdrant), Explainable AI (XAI), Human-in-the-Loop (HITL), Micro-Frontend Architecture.
+- **Key Concepts Demonstrated**: Multi-Agent Orchestration (LangGraph StateGraph), Ensemble Time-Series Forecasting (XGBoost Regressor), Vector RAG Retrieval (Qdrant), Explainable AI (XAI), Human-in-the-Loop (HITL), Micro-Frontend Architecture.
+

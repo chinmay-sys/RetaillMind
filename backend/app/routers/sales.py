@@ -25,7 +25,9 @@ def _get_reference_date(db: Session) -> datetime:
 def get_sales_analytics(
     days: int = Query(30, ge=1, le=365),
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
+
     """Aggregated sales analytics — revenue, units sold, profit, growth."""
     now = _get_reference_date(db)
     period_start = now - timedelta(days=days)

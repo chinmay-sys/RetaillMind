@@ -40,11 +40,12 @@ graph TD
 
 | Agent Name | Specialization | Underlying Technology | Output |
 | :--- | :--- | :--- | :--- |
-| **Demand Forecast Agent** | Time-series demand prediction, festival/event impact modeling | Prophet + XGBoost Ensemble | 30-day demand predictions & upper/lower confidence bands |
-| **Inventory Optimization Agent** | Dynamic safety stock calculation, reorder point triggers, stockout prevention | SciPy / Custom Heuristics | Safety stock targets, reorder quantities, overstock flags |
+| **Demand Forecast Agent** | Time-series demand prediction, festival/event impact modeling | XGBoost Regressor (Joblib Artifact) | 30-day demand predictions, MAE/RMSE/MAPE evaluation |
+| **Inventory Optimization Agent** | Dynamic safety stock calculation, reorder point triggers, stockout prevention | SciPy / Inventory Heuristics | Safety stock targets, reorder quantities, overstock flags |
 | **Pricing Intelligence Agent** | Competitor price tracking, price elasticity, margin target optimization | Price Elasticity Regression | Optimal price points, recommended discount percentages |
-| **Supplier Intelligence Agent** | Supplier reliability scoring, lead-time tracking, risk mitigation | Multi-Criteria Scoring (AHP) | Supplier ranks, optimal vendor order splits |
-| **Decision Intelligence Agent** | Conflict resolution between agents, synthesis of single explainable action | LangChain / GPT-4 / Gemini | Prioritized decision cards with confidence scores & expected ROI |
+| **Supplier Intelligence Agent** | Supplier reliability scoring, lead-time tracking, risk mitigation | Multi-Criteria Scoring (MCDA) | Supplier ranks, optimal vendor order splits |
+| **Decision Intelligence Agent** | Conflict resolution between agents, synthesis of single explainable action | LangGraph StateGraph / Gemini / OpenAI | Prioritized decision cards with confidence scores & expected ROI |
+
 
 ---
 

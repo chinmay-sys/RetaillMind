@@ -132,11 +132,27 @@ class Inventory(Base):
     product = relationship("Product", back_populates="inventory")
 
 
+class Customer(Base):
+    __tablename__ = "customers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(150), nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=True)
+    phone = Column(String(50), nullable=True)
+    city = Column(String(100), default="Mumbai")
+    customer_type = Column(String(50), default="Retail")  # Retail, Wholesale, Corporate
+    total_purchases = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=_utcnow)
+
+    sales = relationship("Sale", back_populates="customer")
+
+
 class Sale(Base):
     __tablename__ = "sales"
 
     id = Column(Integer, primary_key=True, index=True)
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), index=True, nullable=True)
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Float, nullable=False)
     total_amount = Column(Float, nullable=False)
@@ -145,6 +161,8 @@ class Sale(Base):
     sale_date = Column(DateTime, default=_utcnow, index=True)
 
     product = relationship("Product", back_populates="sales")
+    customer = relationship("Customer", back_populates="sales")
+
 
 
 class PurchaseOrder(Base):

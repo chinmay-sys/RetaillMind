@@ -56,7 +56,27 @@ export default function Reports() {
     }, 800)
   }
 
-  const handleExcelDownload = (title: string) => {
+  const handleExcelDownload = async (title: string, reportId?: number) => {
+    try {
+      if (reportId) {
+        const res = await reportsAPI.generateCSV(reportId)
+        const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.setAttribute('href', url)
+        link.setAttribute('download', `${title.replace(/[^a-zA-Z0-9]/g, '_')}_DB.csv`)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        setDownloadFeedback(`Downloaded real database CSV for ${title}!`)
+        setTimeout(() => setDownloadFeedback(null), 3500)
+        return
+      }
+    } catch (e) {
+      console.warn("Backend CSV export error:", e)
+    }
+
     const csvContent = `Report Title,${title}
 Generated Date,${new Date().toLocaleDateString()}
 Status,Completed
@@ -88,6 +108,7 @@ System Confidence,96%
     setDownloadFeedback(`Downloaded ${title}.csv to your device!`)
     setTimeout(() => setDownloadFeedback(null), 3500)
   }
+
 
   const handlePrintPdf = () => {
     window.print()
