@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, Enum as SQLEnum, JSON
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, Enum as SQLEnum, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 import enum
@@ -260,3 +260,45 @@ class AuditLog(Base):
     created_at = Column(DateTime, default=_utcnow)
 
     user = relationship("User", back_populates="audit_logs")
+
+
+class CustomerReview(Base):
+    __tablename__ = "customer_reviews"
+    __table_args__ = (
+        UniqueConstraint("external_review_id", "source", name="uix_ext_review_source"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    external_review_id = Column(String(100), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), index=True, nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    source = Column(String(100), nullable=False, default="DEMO REVIEW SOURCE")
+    review_text = Column(Text, nullable=False)
+    rating = Column(Float, nullable=False)
+    review_date = Column(DateTime, default=_utcnow, index=True)
+    sentiment = Column(String(20), default="NEUTRAL")  # POSITIVE, NEUTRAL, NEGATIVE, UNKNOWN
+    sentiment_score = Column(Float, default=0.0)
+    detected_aspects = Column(JSON, nullable=True)  # e.g. {"Battery": "NEGATIVE", "Quality": "NEGATIVE"}
+    processed_at = Column(DateTime, default=_utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+    last_synced_at = Column(DateTime, default=_utcnow)
+
+    product = relationship("Product")
+    customer = relationship("Customer")
+
+
+class ReviewSyncHealth(Base):
+    __tablename__ = "review_sync_health"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source = Column(String(100), unique=True, nullable=False)
+    last_successful_sync = Column(DateTime, nullable=True)
+    last_attempted_sync = Column(DateTime, nullable=True)
+    number_of_reviews_received = Column(Integer, default=0)
+    sync_status = Column(String(50), default="UNAVAILABLE")  # FRESH, STALE, CRITICAL, UNAVAILABLE, ERROR
+    error_message = Column(Text, nullable=True)
+    freshness_threshold_minutes = Column(Integer, default=60)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+

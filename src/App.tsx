@@ -19,6 +19,7 @@ import DemandForecast from '@/pages/DemandForecast'
 import InventoryIntelligence from '@/pages/InventoryIntelligence'
 import PricingIntelligence from '@/pages/PricingIntelligence'
 import SupplierIntelligence from '@/pages/SupplierIntelligence'
+import CustomerFeedbackIntelligence from '@/pages/CustomerFeedbackIntelligence'
 import AIDecisionCenter from '@/pages/AIDecisionCenter'
 import AIChat from '@/pages/AIChat'
 import Reports from '@/pages/Reports'
@@ -53,6 +54,7 @@ function App() {
               <Route path="inventory" element={<InventoryIntelligence />} />
               <Route path="pricing" element={<PricingIntelligence />} />
               <Route path="suppliers" element={<SupplierIntelligence />} />
+              <Route path="customer-reviews" element={<CustomerFeedbackIntelligence />} />
               <Route path="ai-center" element={<AIDecisionCenter />} />
               <Route path="chat" element={<AIChat />} />
               <Route path="reports" element={<Reports />} />

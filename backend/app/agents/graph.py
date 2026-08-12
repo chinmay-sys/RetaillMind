@@ -20,6 +20,7 @@ class RetailAIState(TypedDict):
     inventory_analysis: Dict[str, Any]
     pricing_analysis: Dict[str, Any]
     supplier_analysis: Dict[str, Any]
+    customer_feedback_analysis: Dict[str, Any]
     recommendations: List[Dict[str, Any]]
     overall_confidence: float
     execution_time_ms: float
@@ -260,28 +261,60 @@ def supplier_agent_node(state: RetailAIState, db: Optional[Session] = None) -> R
     return state
 
 
+def customer_feedback_agent_node(state: RetailAIState, db: Optional[Session] = None) -> RetailAIState:
+    """Customer Feedback Intelligence Agent Node: Analyzes review freshness, sentiment, and complaint aspects."""
+    start = time.time()
+    logger.info("🤖 Executing CustomerFeedbackAgent Node...")
+    analysis = {
+        "status": "UNAVAILABLE",
+        "confidence": 0.0,
+        "latestAnalysis": "Customer review connector initializing.",
+        "output": ["Customer Review Intelligence offline"],
+    }
+
+    if db is not None:
+        try:
+            from app.agents.customer_feedback_agent import customer_feedback_agent
+            analysis = customer_feedback_agent.analyze_feedback(db)
+        except Exception as e:
+            logger.error(f"Error in customer_feedback_agent_node: {e}")
+            state.get("errors", []).append(f"CustomerFeedbackAgent: {str(e)}")
+
+    state["customer_feedback_analysis"] = analysis
+    logger.info(f"✅ CustomerFeedbackAgent Node completed in {round((time.time() - start) * 1000, 1)}ms")
+    return state
+
+
 def decision_agent_node(state: RetailAIState, db: Optional[Session] = None) -> RetailAIState:
     """
     Decision Intelligence Node: Combines agent outputs, resolves inter-agent conflicts,
-    and produces actionable Human-in-the-Loop decision cards.
+    evaluates review data freshness & sentiment safety gates, and produces actionable decision cards.
     """
     start = time.time()
     logger.info("🤖 Executing DecisionAgent Node...")
     
-    # ── CONFLICT RESOLUTION LOGIC ──
-    # Business Rule 1: If Inventory Agent reports CRITICAL stock for an SKU,
-    # suppress any Price Reduction recommendation for that SKU.
     inv_analysis = state.get("inventory_analysis", {})
     pricing_analysis = state.get("pricing_analysis", {})
+    feedback_analysis = state.get("customer_feedback_analysis", {})
+    
+    review_status = (
+        feedback_analysis.get("review_data_status") or 
+        feedback_analysis.get("health", {}).get("status") or 
+        ("FRESH" if feedback_analysis.get("status") == "active" else feedback_analysis.get("status", "UNAVAILABLE"))
+    )
+    health = feedback_analysis.get("health", {})
+    neg_pct = feedback_analysis.get("negative_pct", 0.0)
+    top_complaints = feedback_analysis.get("top_complaints", [])
     
     critical_skus = inv_analysis.get("critical_skus", [])
-    logger.info(f"Checking inter-agent conflicts. Critical SKUs: {critical_skus}")
+    logger.info(f"Checking inter-agent conflicts. Critical SKUs: {critical_skus}, Review status: {review_status}")
 
     confidences = [
         state.get("demand_analysis", {}).get("confidence", 94.0),
         state.get("inventory_analysis", {}).get("confidence", 91.0),
         state.get("pricing_analysis", {}).get("confidence", 92.0),
         state.get("supplier_analysis", {}).get("confidence", 95.0),
+        feedback_analysis.get("confidence", 85.0),
     ]
     avg_confidence = round(sum(confidences) / len(confidences), 1)
 
@@ -291,10 +324,6 @@ def decision_agent_node(state: RetailAIState, db: Optional[Session] = None) -> R
             from app.models.models import AIRecommendation
             recs = db.query(AIRecommendation).order_by(AIRecommendation.created_at.desc()).limit(10).all()
             for r in recs:
-                # Check conflict
-                if r.category == "Pricing" and "Reduction" in r.title:
-                    # If affected product is critical, adjust reasoning
-                    pass
                 recommendations.append({
                     "id": r.id,
                     "priority": r.priority,
@@ -312,40 +341,71 @@ def decision_agent_node(state: RetailAIState, db: Optional[Session] = None) -> R
         except Exception as e:
             logger.error(f"Error querying AIRecommendations in decision_agent_node: {e}")
 
+    # ── MANDATORY RULES 13 & 14: DECISION SAFETY GATES ──
+    gate_applied = False
+    
+    if review_status != "FRESH":
+        # SAFETY GATE 1: Review Data is STALE / UNAVAILABLE -> Put Reorders ON HOLD
+        logger.warning(f"⚠️ Decision Safety Gate Triggered: Customer Review Data is {review_status}")
+        avg_confidence = min(avg_confidence, 48.0)
+        gate_applied = True
+        
+        hold_rec = {
+            "id": 999,
+            "priority": "Critical",
+            "title": "RECOMMENDATION ON HOLD: Customer Review Intelligence Stale/Unavailable",
+            "description": f"Customer review synchronization status is {review_status} (Last sync: {health.get('minutes_since_sync', 'N/A')} mins ago). Reordering inventory without current customer feedback introduces product-quality risk.",
+            "agent": "Decision Safety Gate",
+            "impact": "Prevent defective inventory procurement risk",
+            "status": "Pending",
+            "confidence": 45.0,
+            "reasoning": f"CRITICAL SAFETY RULE ENFORCED: Review data freshness is {review_status}. High-impact reorder recommendations are held until review sync health is restored or manually verified.",
+            "action_data": {
+                "action_type": "HOLD",
+                "review_status": review_status,
+                "required_action": "Restore review data synchronization or perform manual quality audit."
+            }
+        }
+        recommendations = [hold_rec] + [r for r in recommendations if r.get("id") != 999]
+
+    elif neg_pct >= 35.0 or (top_complaints and top_complaints[0]["count"] >= 2):
+        # SAFETY GATE 2: Multi-Signal Quality Gate: High Demand but High Negative Reviews / Defect Complaints
+        top_issue = top_complaints[0]["aspect"] if top_complaints else "Product Quality"
+        logger.warning(f"⚠️ Multi-Signal Quality Gate Triggered: Negative reviews at {neg_pct}%, top complaint: {top_issue}")
+        avg_confidence = round(min(avg_confidence, 68.0), 1)
+        gate_applied = True
+
+        hold_quality_rec = {
+            "id": 998,
+            "priority": "High",
+            "title": f"HOLD REORDER: Customer Defect Alert ({top_issue})",
+            "description": f"Demand forecast indicates sales growth, but customer negative sentiment is {neg_pct}%. Primary complaint: {top_issue}.",
+            "agent": "Decision Safety Gate + Customer Feedback Agent",
+            "impact": "Avoid ₹4.5L defective inventory return loss",
+            "status": "Pending",
+            "confidence": 65.0,
+            "reasoning": f"Demand forecast indicates sales growth, but customer dissatisfaction ({neg_pct}% negative) and return/defect signals indicate a possible product-quality issue. Automatic reorder is placed ON HOLD pending quality investigation.",
+            "action_data": {
+                "action_type": "INVESTIGATE_QUALITY",
+                "primary_complaint": top_issue,
+                "negative_pct": neg_pct,
+                "recommended_action": "Pause procurement; request vendor sample audit from TechFlow Solutions."
+            }
+        }
+        recommendations = [hold_quality_rec] + [r for r in recommendations if r.get("id") not in (998, 999)]
+
     if not recommendations:
         recommendations = [
             {
                 "id": 101,
-                "priority": "Critical",
-                "title": "Immediate Restock: Wireless Mouse Elite",
-                "description": "Stock at 23 units (safety: 80). At current burn rate, stockout in 3.5 days. Emergency PO to TechFlow Solutions recommended.",
-                "agent": "Inventory + Supplier Agent",
+                "priority": "High",
+                "title": "Safe Reorder: Wireless Mouse Elite (200 Units)",
+                "description": "Stock at 23 units (safety: 80). Customer feedback is FRESH (92% positive). PO generation to TechFlow Solutions recommended.",
+                "agent": "Inventory + Customer Feedback Agent",
                 "impact": "Prevent ₹2.3L revenue loss",
                 "status": "Pending",
-                "confidence": 98.0,
-                "reasoning": "Inventory Agent detected stock < safety_stock threshold. Supplier Agent confirmed 3.2-day SLA delivery."
-            },
-            {
-                "id": 102,
-                "priority": "High",
-                "title": "Price Reduction: Gaming Laptop Pro X1",
-                "description": "Currently overpriced by ₹5,000 vs market. Reducing to ₹84,999 projects +12% sales volume with minimal margin impact.",
-                "agent": "Pricing + Demand Agent",
-                "impact": "Projected +₹1.7L revenue",
-                "status": "Pending",
-                "confidence": 93.5,
-                "reasoning": "Price elasticity model predicts +12% volume increase at target price point while preserving >20% gross margin."
-            },
-            {
-                "id": 103,
-                "priority": "Medium",
-                "title": "Clearance Campaign: Desk Lamp Smart LED",
-                "description": "445 units in stock (max: 300). 20% discount campaign recommended to clear 150+ excess units within 2 weeks.",
-                "agent": "Inventory + Pricing Agent",
-                "impact": "Free up ₹4.5L working capital",
-                "status": "Pending",
-                "confidence": 89.0,
-                "reasoning": "Inventory Agent detected overstock > max_stock capacity. Clearance discount calculated to maximize working capital recovery."
+                "confidence": 96.0,
+                "reasoning": "Strong demand forecast with healthy customer sentiment (4.4 avg rating) and verified supplier lead time."
             }
         ]
 
@@ -354,7 +414,7 @@ def decision_agent_node(state: RetailAIState, db: Optional[Session] = None) -> R
     state["recommendations"] = recommendations
     state["overall_confidence"] = avg_confidence
     state["execution_time_ms"] = exec_time
-    logger.info(f"✅ DecisionAgent Node completed consensus synthesis in {exec_time}ms")
+    logger.info(f"✅ DecisionAgent Node completed consensus synthesis in {exec_time}ms (Safety gate applied: {gate_applied})")
     return state
 
 
@@ -379,13 +439,15 @@ class LangGraphRetailOrchestrator:
             builder.add_node("inventory_agent", inventory_agent_node)
             builder.add_node("pricing_agent", pricing_agent_node)
             builder.add_node("supplier_agent", supplier_agent_node)
+            builder.add_node("customer_feedback_agent", customer_feedback_agent_node)
             builder.add_node("decision_agent", decision_agent_node)
 
             builder.set_entry_point("demand_agent")
             builder.add_edge("demand_agent", "inventory_agent")
             builder.add_edge("inventory_agent", "pricing_agent")
             builder.add_edge("pricing_agent", "supplier_agent")
-            builder.add_edge("supplier_agent", "decision_agent")
+            builder.add_edge("supplier_agent", "customer_feedback_agent")
+            builder.add_edge("customer_feedback_agent", "decision_agent")
             builder.add_edge("decision_agent", END)
 
             self._compiled_graph = builder.compile()
@@ -402,6 +464,7 @@ class LangGraphRetailOrchestrator:
             "inventory_analysis": {},
             "pricing_analysis": {},
             "supplier_analysis": {},
+            "customer_feedback_analysis": {},
             "recommendations": [],
             "overall_confidence": 95.0,
             "execution_time_ms": 0.0,
@@ -420,6 +483,7 @@ class LangGraphRetailOrchestrator:
         st = inventory_agent_node(st, db=db)
         st = pricing_agent_node(st, db=db)
         st = supplier_agent_node(st, db=db)
+        st = customer_feedback_agent_node(st, db=db)
         st = decision_agent_node(st, db=db)
 
         return self._format_response(st)
@@ -430,6 +494,7 @@ class LangGraphRetailOrchestrator:
         inventory = state.get("inventory_analysis", {})
         pricing = state.get("pricing_analysis", {})
         supplier = state.get("supplier_analysis", {})
+        customer_feedback = state.get("customer_feedback_analysis", {})
 
         conf = state.get("overall_confidence", 95.0)
 
@@ -438,9 +503,9 @@ class LangGraphRetailOrchestrator:
             "confidence": conf,
             "lastRun": datetime.now(timezone.utc).strftime("%I:%M %p"),
             "executionTime": f"{state.get('execution_time_ms', 12.0)}ms",
-            "latestAnalysis": f"Synthesized outputs from 4 domain agents with {conf}% consensus confidence.",
+            "latestAnalysis": f"Synthesized outputs from 5 domain agents with {conf}% consensus confidence.",
             "output": [
-                "Resolved inter-agent priority conflicts between Inventory and Pricing",
+                "Evaluated Customer Feedback Data Freshness & Sentiment Safety Gates",
                 f"Computed aggregate Multi-Agent consensus score: {conf}%",
                 f"Pushed {len(state.get('recommendations', []))} prioritized decision cards"
             ]
@@ -452,7 +517,8 @@ class LangGraphRetailOrchestrator:
                 {**inventory, "id": "inventory", "name": "Inventory Agent", "description": "Monitors real-time stock levels, calculates dynamic safety stock, and triggers automated reorder points.", "color": "#10B981"},
                 {**pricing, "id": "pricing", "name": "Pricing Agent", "description": "Evaluates competitor pricing, price elasticity, and margin targets to recommend optimal selling prices.", "color": "#F59E0B"},
                 {**supplier, "id": "supplier", "name": "Supplier Agent", "description": "Scores supplier reliability, tracks delivery lead times, and optimizes procurement vendor distribution.", "color": "#8B5CF6"},
-                {**decision_analysis, "id": "decision", "name": "Decision Agent", "description": "Synthesizes outputs from all 4 domain agents, resolves conflicting recommendations, and presents prioritized business actions.", "color": "#7C3AED"},
+                {**customer_feedback, "id": "customer_feedback", "name": "Customer Feedback Agent", "description": "Ingests automated review streams, evaluates sentiment, detects defect aspects, and monitors data freshness.", "color": "#EC4899"},
+                {**decision_analysis, "id": "decision", "name": "Decision Agent", "description": "Synthesizes outputs from all 5 domain agents, enforces freshness safety gates, and presents prioritized business actions.", "color": "#7C3AED"},
             ],
             "recommendations": state.get("recommendations", [])
         }

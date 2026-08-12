@@ -9,7 +9,8 @@ from app.database import SessionLocal, init_db
 from app.models.models import (
     Role, User, UserRole, Category, Supplier, Product,
     Inventory, InventoryStatus, Sale, PurchaseOrder, Forecast,
-    AIRecommendation, RecommendationStatus, Report, AuditLog
+    AIRecommendation, RecommendationStatus, Report, AuditLog,
+    CustomerReview, ReviewSyncHealth
 )
 from app.kaggle_loader import load_kaggle_products_and_sales
 
@@ -458,6 +459,76 @@ def seed(force: bool = False):
                  entity_id=1, details="Manager approved restock recommendation for Wireless Mouse Elite"),
     ]
     db.add_all(audit_logs)
+    db.flush()
+
+    # ── 12. CUSTOMER REVIEWS & SYNC HEALTH ──
+    sync_health = ReviewSyncHealth(
+        source="DEMO REVIEW SOURCE (Simulated Connector)",
+        last_successful_sync=now - timedelta(minutes=8),
+        last_attempted_sync=now - timedelta(minutes=8),
+        number_of_reviews_received=4,
+        sync_status="FRESH",
+        freshness_threshold_minutes=60
+    )
+    db.add(sync_health)
+
+    sample_reviews = [
+        CustomerReview(
+            external_review_id="rev_seed_101",
+            product_id=products[0].id if len(products) > 0 else 1,
+            source="DEMO REVIEW SOURCE (Simulated Connector)",
+            review_text="Battery drains in under 45 minutes and the bottom panel gets dangerously hot while charging. Disappointed with product quality.",
+            rating=1.5,
+            review_date=now - timedelta(hours=2),
+            sentiment="NEGATIVE",
+            sentiment_score=0.96,
+            detected_aspects={"Battery": "NEGATIVE", "Quality": "NEGATIVE"},
+            processed_at=now - timedelta(hours=2),
+            last_synced_at=now - timedelta(minutes=8),
+        ),
+        CustomerReview(
+            external_review_id="rev_seed_102",
+            product_id=products[0].id if len(products) > 0 else 1,
+            source="DEMO REVIEW SOURCE (Simulated Connector)",
+            review_text="Overheating issues during routine software usage. Display is sharp but battery life is abysmal.",
+            rating=2.0,
+            review_date=now - timedelta(hours=5),
+            sentiment="NEGATIVE",
+            sentiment_score=0.92,
+            detected_aspects={"Battery": "NEGATIVE", "Display": "POSITIVE"},
+            processed_at=now - timedelta(hours=5),
+            last_synced_at=now - timedelta(minutes=8),
+        ),
+        CustomerReview(
+            external_review_id="rev_seed_103",
+            product_id=products[1].id if len(products) > 1 else 2,
+            source="DEMO REVIEW SOURCE (Simulated Connector)",
+            review_text="Fantastic ergonomic mouse! Super responsive sensor and smooth tracking on all surfaces.",
+            rating=5.0,
+            review_date=now - timedelta(hours=1),
+            sentiment="POSITIVE",
+            sentiment_score=0.98,
+            detected_aspects={"Performance": "POSITIVE", "Quality": "POSITIVE"},
+            processed_at=now - timedelta(hours=1),
+            last_synced_at=now - timedelta(minutes=8),
+        ),
+        CustomerReview(
+            external_review_id="rev_seed_104",
+            product_id=products[2].id if len(products) > 2 else 3,
+            source="DEMO REVIEW SOURCE (Simulated Connector)",
+            review_text="Clean design and bright LED illumination. Touch controls work seamlessly.",
+            rating=4.5,
+            review_date=now - timedelta(hours=3),
+            sentiment="POSITIVE",
+            sentiment_score=0.95,
+            detected_aspects={"Quality": "POSITIVE"},
+            processed_at=now - timedelta(hours=3),
+            last_synced_at=now - timedelta(minutes=8),
+        ),
+    ]
+    db.add_all(sample_reviews)
+    db.flush()
+    print("  ✅ Customer reviews & integration health seeded")
 
     db.commit()
     db.close()

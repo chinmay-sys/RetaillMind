@@ -378,6 +378,28 @@ class DecisionAgent(SpecializedAgent):
         }
 
 
+class CustomerFeedbackAgentWrapper(SpecializedAgent):
+    def __init__(self):
+        super().__init__(
+            agent_id="customer_feedback",
+            name="Customer Feedback Agent",
+            description="Ingests automated review streams, evaluates sentiment, detects defect aspects, and monitors data freshness.",
+            color="#EC4899"
+        )
+
+    def analyze(self, db: Optional[Session] = None, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        if db is not None:
+            from app.agents.customer_feedback_agent import customer_feedback_agent
+            return customer_feedback_agent.analyze_feedback(db)
+        return {
+            "status": "active",
+            "review_data_status": "UNAVAILABLE",
+            "confidence": 0.0,
+            "latestAnalysis": "Customer review connector initializing.",
+            "output": ["Customer Review Intelligence offline"]
+        }
+
+
 class AIOrchestrator:
     """
     Main Agentic AI System Coordinator.
@@ -388,6 +410,7 @@ class AIOrchestrator:
         self.inventory_agent = InventoryAgent()
         self.pricing_agent = PricingAgent()
         self.supplier_agent = SupplierAgent()
+        self.customer_feedback_agent = CustomerFeedbackAgentWrapper()
         self.decision_agent = DecisionAgent()
 
     def run_single_agent(self, agent_id: str, db: Optional[Session] = None) -> Dict[str, Any]:
@@ -397,6 +420,8 @@ class AIOrchestrator:
             "inventory": self.inventory_agent,
             "pricing": self.pricing_agent,
             "supplier": self.supplier_agent,
+            "customer_feedback": self.customer_feedback_agent,
+            "customer-feedback": self.customer_feedback_agent,
         }
 
         agent = agent_map.get(agent_id.lower())

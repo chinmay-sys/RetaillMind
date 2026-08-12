@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import {
   Brain, Zap, CheckCircle2, Cpu, ThumbsUp, Edit3, XCircle, RefreshCw,
   TrendingUp, Package, DollarSign, Users, X, Shield, ArrowRight, Activity,
-  Sliders, Layers, Sparkles, Check
+  Sliders, Layers, Sparkles, Check, MessageSquare
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -67,6 +67,9 @@ const getAgentIcon = (id: string) => {
     case 'supplier':
     case 'supplier-agent':
       return Users
+    case 'customer_feedback':
+    case 'customer-feedback':
+      return MessageSquare
     default:
       return Brain
   }
@@ -254,6 +257,48 @@ const agentDetailedProfiles: Record<string, {
       { time: '08:00 AM', action: 'Lead time delay prediction model update', status: 'SUCCESS', latency: '1.1s' }
     ],
     domainRoute: '/app/suppliers'
+  },
+  'customer_feedback': {
+    fullDescription: 'The Customer Feedback Agent continuously ingests automated review streams, monitors review data freshness, runs Hugging Face DistilBERT sentiment classification, extracts defect aspects, and enforces decision safety gates.',
+    architecture: 'DistilBERT-SST2 + NLP Aspect Extractor + Health Safety Gate',
+    dataScanned: 'Customer review streams & integration sync health',
+    capabilities: [
+      'Automated background review stream ingestion & deduplication',
+      'DistilBERT sentiment analysis (Positive, Neutral, Negative)',
+      '11-category aspect defect complaint extraction',
+      'Transparent Product Risk Scoring & Decision Safety Gate enforcement'
+    ],
+    activeRules: [
+      'Trigger STALE/CRITICAL safety gate if last sync > 60 minutes.',
+      'Put inventory reorder on HOLD if negative sentiment >= 35% or defect complaints spike.',
+      'Explicitly mark review status UNAVAILABLE if connector is offline.'
+    ],
+    executionLogs: [
+      { time: '10:32 AM', action: 'Periodic 15-minute review stream ingestion', status: 'SUCCESS', latency: '0.4s' },
+      { time: '10:15 AM', action: 'DistilBERT sentiment & aspect extraction batch', status: 'SUCCESS', latency: '0.9s' }
+    ],
+    domainRoute: '/app/customer-reviews'
+  },
+  'customer-feedback': {
+    fullDescription: 'The Customer Feedback Agent continuously ingests automated review streams, monitors review data freshness, runs Hugging Face DistilBERT sentiment classification, extracts defect aspects, and enforces decision safety gates.',
+    architecture: 'DistilBERT-SST2 + NLP Aspect Extractor + Health Safety Gate',
+    dataScanned: 'Customer review streams & integration sync health',
+    capabilities: [
+      'Automated background review stream ingestion & deduplication',
+      'DistilBERT sentiment analysis (Positive, Neutral, Negative)',
+      '11-category aspect defect complaint extraction',
+      'Transparent Product Risk Scoring & Decision Safety Gate enforcement'
+    ],
+    activeRules: [
+      'Trigger STALE/CRITICAL safety gate if last sync > 60 minutes.',
+      'Put inventory reorder on HOLD if negative sentiment >= 35% or defect complaints spike.',
+      'Explicitly mark review status UNAVAILABLE if connector is offline.'
+    ],
+    executionLogs: [
+      { time: '10:32 AM', action: 'Periodic 15-minute review stream ingestion', status: 'SUCCESS', latency: '0.4s' },
+      { time: '10:15 AM', action: 'DistilBERT sentiment & aspect extraction batch', status: 'SUCCESS', latency: '0.9s' }
+    ],
+    domainRoute: '/app/customer-reviews'
   },
   'decision': {
     fullDescription: 'The Decision Intelligence Agent is the master meta-orchestrator. It synthesizes insights from all 4 domain agents, resolves conflicting recommendations, and delivers actionable Human-in-the-Loop decision cards.',

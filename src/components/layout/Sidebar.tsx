@@ -18,6 +18,7 @@ const navItems = [
   { path: '/app/inventory', icon: Package, label: 'Inventory' },
   { path: '/app/pricing', icon: DollarSign, label: 'Pricing' },
   { path: '/app/suppliers', icon: Users, label: 'Suppliers' },
+  { path: '/app/customer-reviews', icon: MessageSquare, label: 'Customer Reviews' },
   { path: '/app/ai-center', icon: Brain, label: 'AI Decision Center' },
   { path: '/app/reports', icon: FileText, label: 'Reports' },
   { path: '/app/chat', icon: MessageSquare, label: 'AI Chat' },

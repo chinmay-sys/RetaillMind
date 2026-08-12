@@ -6,8 +6,9 @@ from app.config import settings
 from app.database import init_db, SessionLocal
 from app.routers import (
     auth, sales, inventory, forecast, pricing,
-    suppliers, ai_center, chat, reports, audit
+    suppliers, ai_center, chat, reports, audit, customer_reviews
 )
+from app.services.review_sync_service import review_sync_scheduler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("retailmind")
@@ -15,7 +16,7 @@ logger = logging.getLogger("retailmind")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: create tables and run seed with real Kaggle dataset."""
+    """Startup: create tables, run seed, and start review sync background scheduler."""
     logger.info("🚀 Initializing RetailMind AI database...")
     init_db()
     db = SessionLocal()
@@ -40,10 +41,14 @@ async def lifespan(app: FastAPI):
         logger.warning(f"⚠️ Lifespan initialization notice: {e}")
     finally:
         db.close()
+
+    # Start background review polling scheduler
+    await review_sync_scheduler.start()
     yield
 
+    # Shutdown
+    await review_sync_scheduler.stop()
     logger.info("🛑 Shutting down RetailMind AI")
-
 
 
 app = FastAPI(
@@ -75,6 +80,7 @@ app.include_router(ai_center.router, prefix=settings.API_V1_STR)
 app.include_router(chat.router, prefix=settings.API_V1_STR)
 app.include_router(reports.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
+app.include_router(customer_reviews.router)
 
 @app.get("/")
 def root():

@@ -20,7 +20,10 @@ def test_forecaster_feature_engineering():
     """Test feature engineering without data leakage."""
     import pandas as pd
     data = [
-        {"ds": f"2026-01-{i+1:02d}", "y": 100 + i * 5}
+        {
+            "ds": (pd.Timestamp("2026-01-01") + pd.Timedelta(days=i)).strftime("%Y-%m-%d"),
+            "y": 100 + i * 5,
+        }
         for i in range(35)
     ]
     df = pd.DataFrame(data)
@@ -34,8 +37,12 @@ def test_forecaster_feature_engineering():
 
 def test_forecaster_prediction():
     """Test XGBoost / statistical forecaster prediction output."""
+    import pandas as pd
     data = [
-        {"ds": f"2026-01-{i+1:02d}", "y": 100 + (i % 7) * 10}
+        {
+            "ds": (pd.Timestamp("2026-01-01") + pd.Timedelta(days=i)).strftime("%Y-%m-%d"),
+            "y": 100 + (i % 7) * 10,
+        }
         for i in range(40)
     ]
     res = demand_forecaster.predict_future(data, days_ahead=14)
@@ -46,17 +53,36 @@ def test_forecaster_prediction():
     assert res["confidence"] > 0.0
 
 
+def test_forecaster_invalid_date():
+    """Test that malformed/invalid calendar dates raise ValueError and are not silently accepted."""
+    import pandas as pd
+    data = [
+        {
+            "ds": (pd.Timestamp("2026-01-01") + pd.Timedelta(days=i)).strftime("%Y-%m-%d"),
+            "y": 100,
+        }
+        for i in range(7)
+    ]
+    data.append({"ds": "2026-01-32", "y": 100})
+    df = pd.DataFrame(data)
+    with pytest.raises(ValueError):
+        demand_forecaster.engineer_features(df)
+    with pytest.raises(ValueError):
+        demand_forecaster.predict_future(data, days_ahead=7)
+
+
 def test_langgraph_orchestrator():
     """Test LangGraph Multi-Agent pipeline execution."""
     res = langgraph_orchestrator.run_pipeline(user_query="Restock check")
     
     assert "agents" in res
-    assert len(res["agents"]) == 5
+    assert len(res["agents"]) == 6
     agent_ids = [a["id"] for a in res["agents"]]
     assert "demand" in agent_ids
     assert "inventory" in agent_ids
     assert "pricing" in agent_ids
     assert "supplier" in agent_ids
+    assert "customer_feedback" in agent_ids
     assert "decision" in agent_ids
     assert "recommendations" in res
 
