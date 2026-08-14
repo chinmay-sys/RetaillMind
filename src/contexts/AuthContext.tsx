@@ -7,6 +7,8 @@ interface User {
   first_name: string
   last_name: string
   role: string
+  phone?: string
+  location?: string
 }
 
 interface AuthContextType {
@@ -17,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   register: (data: { first_name: string; last_name: string; email: string; password: string; organization?: string }) => Promise<void>
   logout: () => void
+  updateUser: (data: Partial<User>) => void
   error: string | null
   clearError: () => void
 }
@@ -104,12 +107,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('retailmind_user')
   }
 
+  const updateUser = (data: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null
+      const updated = { ...prev, ...data }
+      localStorage.setItem('retailmind_user', JSON.stringify(updated))
+      return updated
+    })
+  }
+
   const clearError = () => setError(null)
 
   return (
     <AuthContext.Provider value={{
       user, token, isAuthenticated: !!token, isLoading,
-      login, register, logout, error, clearError,
+      login, register, logout, updateUser, error, clearError,
     }}>
       {children}
     </AuthContext.Provider>

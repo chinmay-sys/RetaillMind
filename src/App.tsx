@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 
 // Layouts
@@ -27,9 +28,10 @@ import Settings from '@/pages/Settings'
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <TooltipProvider>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <TooltipProvider>
           <Routes>
             {/* Public */}
             <Route path="/" element={<Landing />} />
@@ -67,6 +69,7 @@ function App() {
         </TooltipProvider>
       </AuthProvider>
     </BrowserRouter>
+  </ThemeProvider>
   )
 }
 

@@ -38,7 +38,7 @@ class CustomerFeedbackAgent:
                 return self._build_empty_response(health)
 
             # 3. Calculate Ratings & Sentiment Distribution
-            avg_rating = round(sum(r.rating for r in reviews) / total_reviews, 2)
+            avg_rating = round(float(sum(float(r.rating) for r in reviews) / total_reviews), 2)
             pos_count = sum(1 for r in reviews if r.sentiment == "POSITIVE")
             neu_count = sum(1 for r in reviews if r.sentiment == "NEUTRAL")
             neg_count = sum(1 for r in reviews if r.sentiment == "NEGATIVE")
@@ -52,8 +52,19 @@ class CustomerFeedbackAgent:
             seven_days_ago = now - timedelta(days=7)
             fourteen_days_ago = now - timedelta(days=14)
 
-            recent_reviews = [r for r in reviews if r.review_date and (r.review_date.tzinfo or timezone.utc) >= seven_days_ago]
-            prev_reviews = [r for r in reviews if r.review_date and fourteen_days_ago <= (r.review_date.tzinfo or timezone.utc) < seven_days_ago]
+            def _to_utc(dt: Optional[datetime]) -> Optional[datetime]:
+                if not dt:
+                    return None
+                return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+            recent_reviews = [
+                r for r in reviews
+                if (r_dt := _to_utc(r.review_date)) is not None and r_dt >= seven_days_ago
+            ]
+            prev_reviews = [
+                r for r in reviews
+                if (r_dt := _to_utc(r.review_date)) is not None and fourteen_days_ago <= r_dt < seven_days_ago
+            ]
 
             recent_neg_pct = (sum(1 for r in recent_reviews if r.sentiment == "NEGATIVE") / len(recent_reviews) * 100) if recent_reviews else neg_pct
             prev_neg_pct = (sum(1 for r in prev_reviews if r.sentiment == "NEGATIVE") / len(prev_reviews) * 100) if prev_reviews else neg_pct
@@ -130,9 +141,9 @@ class CustomerFeedbackAgent:
                 continue
 
             n = len(revs)
-            avg_r = sum(r.rating for r in revs) / n
+            avg_r = float(sum(float(r.rating) for r in revs) / n)
             neg_c = sum(1 for r in revs if r.sentiment == "NEGATIVE")
-            neg_p = (neg_c / n) * 100.0
+            neg_p = float((neg_c / n) * 100.0)
 
             # Count negative aspects
             aspect_neg = 0
@@ -146,10 +157,10 @@ class CustomerFeedbackAgent:
                             aspect_dict[asp] = aspect_dict.get(asp, 0) + 1
 
             if aspect_dict:
-                primary_aspect = max(aspect_dict, key=aspect_dict.get)
+                primary_aspect = max(aspect_dict, key=lambda k: aspect_dict[k])
 
             # Risk Score Calculation
-            base_score = (neg_p * 0.40) + ((5.0 - avg_r) * 20.0 * 0.30) + (aspect_neg * 3.0)
+            base_score = float((neg_p * 0.40) + ((5.0 - avg_r) * 20.0 * 0.30) + (aspect_neg * 3.0))
             if sync_status != "FRESH":
                 base_score += 15.0  # Stale data risk penalty
 

@@ -20,6 +20,52 @@
     --muted-foreground: 215 16% 47%;
   }
 
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --muted: 215 20% 65%;
+    --muted-foreground: 215 20% 65%;
+  }
+
+  .dark body {
+    background-color: #0F172A !important;
+    color: #F8FAFC !important;
+  }
+
+  .dark .bg-white {
+    background-color: #1E293B !important;
+    color: #F8FAFC !important;
+  }
+
+  .dark .bg-gray-50 {
+    background-color: #0F172A !important;
+  }
+
+  .dark .bg-gray-100 {
+    background-color: #334155 !important;
+  }
+
+  .dark .bg-white\/80 {
+    background-color: rgba(30, 41, 59, 0.85) !important;
+  }
+
+  .dark .border-gray-100,
+  .dark .border-gray-200 {
+    border-color: #334155 !important;
+  }
+
+  .dark .text-foreground {
+    color: #F8FAFC !important;
+  }
+
+  .dark .text-muted {
+    color: #94A3B8 !important;
+  }
+
   * {
     @apply border-border;
     margin: 0;
