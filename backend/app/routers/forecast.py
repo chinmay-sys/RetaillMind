@@ -16,7 +16,7 @@ router = APIRouter(prefix="/forecast", tags=["Demand Forecasting"])
 
 
 def _fetch_historical_sales(db: Session, product_id: int = None, days: int = 365):
-    """Fetch daily aggregated sales from DB as Prophet-compatible data."""
+    """Fetch daily aggregated sales from DB as time-series training data (ds, y)."""
     latest_sale = db.query(func.max(Sale.sale_date)).scalar()
     ref_date = latest_sale if latest_sale else datetime.now()
     start_date = ref_date - timedelta(days=days)

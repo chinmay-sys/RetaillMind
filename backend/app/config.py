@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./retailmind.db"
     
     # JWT Authentication
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "retailmind_prod_secret_key_8f9a2b3c4d5e6f7a8b9c0d1e2f3a4b5c")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "retailmind_dev_secret_key_change_in_production_32bytes")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     

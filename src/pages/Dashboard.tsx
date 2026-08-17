@@ -89,7 +89,7 @@ export default function Dashboard() {
               change: '+2.1%',
               trend: 'up' as const,
               icon: initialStats[2].icon,
-              description: 'Prophet + LSTM model',
+              description: 'XGBoost model',
               color: 'text-accent',
               bgColor: 'bg-accent/10',
             },

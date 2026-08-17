@@ -16,7 +16,7 @@ import { AgentCard } from '@/components/shared/AgentCard'
 const initialAiAgents = [
   {
     id: 'demand', name: 'Demand Forecast Agent', domain: 'Sales Prediction',
-    description: 'Analyzes historical sales patterns, seasonal trends, and festival impacts using Prophet + XGBoost ensemble models.',
+    description: 'Analyzes historical sales patterns, seasonal trends, and festival impacts using XGBoost with lag & rolling temporal features.',
     status: 'active' as const, confidence: 94, lastRun: '10 min ago',
     executionTime: '1.2s', color: '#5B5CEB',
     latestAnalysis: '30-day demand forecast updated. Diwali seasonal surge multiplier active (+45% weight for next 14 days).',
@@ -86,7 +86,7 @@ const agentDetailedProfiles: Record<string, {
 }> = {
   'demand': {
     fullDescription: 'The Demand Forecast Agent continuously analyzes historical POS transactions, festival seasonality, weather patterns, and macroeconomic indices to generate rolling 30-day demand predictions for all SKUs.',
-    architecture: 'Prophet + LSTM Neural Network Ensemble',
+    architecture: 'XGBoost Regressor with 7, 14, 30-Day Lag & Rolling Statistics',
     dataScanned: '24,847 transaction logs across active SKUs',
     capabilities: [
       'Time-series trend & seasonal decomposition',
@@ -108,7 +108,7 @@ const agentDetailedProfiles: Record<string, {
   },
   'demand-forecast': {
     fullDescription: 'The Demand Forecast Agent continuously analyzes historical POS transactions, festival seasonality, weather patterns, and macroeconomic indices to generate rolling 30-day demand predictions for all SKUs.',
-    architecture: 'Prophet + LSTM Neural Network Ensemble',
+    architecture: 'XGBoost Regressor with 7, 14, 30-Day Lag & Rolling Statistics',
     dataScanned: '24,847 transaction logs across active SKUs',
     capabilities: [
       'Time-series trend & seasonal decomposition',

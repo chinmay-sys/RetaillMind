@@ -1,19 +1,19 @@
 # RetailMind AI — System Architecture & Design Specification
 
 > **An Agentic Retail Decision Intelligence Platform**  
-> *Powered by FastAPI, React, Prophet, XGBoost, LangGraph, and RAG (Qdrant + LLM)*
+> *Powered by FastAPI, React, XGBoost, DistilBERT, LangGraph, and RAG (Qdrant + LLM)*
 
 ---
 
 ## 1. Executive System Overview
 
-RetailMind AI is an enterprise-grade AI decision intelligence platform for retail business decision-makers. Unlike conventional inventory software that simply logs stock counts, RetailMind AI applies a **Multi-Agent AI System**, **Machine Learning Ensemble Forecasting**, and **Retrieval Augmented Generation (RAG)** to analyze store performance, forecast demand, optimize pricing, evaluate suppliers, and present explainable business recommendations.
+RetailMind AI is an enterprise-grade AI decision intelligence platform for retail business decision-makers. Unlike conventional inventory software that simply logs stock counts, RetailMind AI applies a **Multi-Agent AI System**, **Machine Learning Demand Forecasting (XGBoost)**, **Customer Feedback Intelligence (DistilBERT)**, and **Retrieval Augmented Generation (RAG)** to analyze store performance, forecast demand, optimize pricing, evaluate suppliers, and present explainable business recommendations with decision safety gates.
 
 ---
 
 ## 2. Multi-Agent System Architecture
 
-The AI layer is structured as a **LangGraph Directed Acyclic Graph (DAG)** of specialized domain agents coordinated by an **AI Orchestrator**.
+The AI layer is structured as a **LangGraph Directed Acyclic Graph (DAG)** of 6 specialized domain agents coordinated by an **AI Orchestrator**.
 
 ```mermaid
 graph TD
@@ -24,16 +24,18 @@ graph TD
     C --> E[Inventory Optimization Agent]
     C --> F[Pricing Intelligence Agent]
     C --> G[Supplier Intelligence Agent]
+    C --> H[Customer Feedback Agent]
     
-    D --> H[Decision Intelligence Meta-Agent]
-    E --> H
-    F --> H
-    G --> H
+    D --> I[Decision Intelligence Meta-Agent]
+    E --> I
+    F --> I
+    G --> I
+    H --> I
     
-    H --> I[Large Language Model / RAG]
-    I --> J[AI Decision Center Dashboard]
-    J --> K[Human Retail Manager - Approve/Modify/Reject]
-    K --> L[Business Action Execution & Audit Log]
+    I --> J[Decision Safety Gates - Freshness & Defect Guards]
+    J --> K[AI Decision Center Dashboard]
+    K --> L[Human Retail Manager - Approve/Modify/Reject]
+    L --> M[Business Action Execution & Audit Log]
 ```
 
 ### Agent Roles & Responsibilities
@@ -44,7 +46,8 @@ graph TD
 | **Inventory Optimization Agent** | Dynamic safety stock calculation, reorder point triggers, stockout prevention | SciPy / Inventory Heuristics | Safety stock targets, reorder quantities, overstock flags |
 | **Pricing Intelligence Agent** | Competitor price tracking, price elasticity, margin target optimization | Price Elasticity Regression | Optimal price points, recommended discount percentages |
 | **Supplier Intelligence Agent** | Supplier reliability scoring, lead-time tracking, risk mitigation | Multi-Criteria Scoring (MCDA) | Supplier ranks, optimal vendor order splits |
-| **Decision Intelligence Agent** | Conflict resolution between agents, synthesis of single explainable action | LangGraph StateGraph / Gemini / OpenAI | Prioritized decision cards with confidence scores & expected ROI |
+| **Customer Feedback Agent** | Automated review stream ingestion, sentiment & aspect extraction | DistilBERT / NLP Pattern Analyzer | Negative %, complaint aspects, product risk scores |
+| **Decision Intelligence Agent** | Multi-agent consensus, decision safety gates, actionable cards | LangGraph StateGraph / Gemini / OpenAI | Prioritized decision cards with confidence & safety hold enforcement |
 
 
 ---
@@ -54,12 +57,10 @@ graph TD
 ```mermaid
 flowchart LR
     A[Collect Historical Sales] --> B[Data Cleaning & Missing Imputation]
-    B --> C[Feature Engineering]
-    C --> D[Prophet Seasonality Decomposition]
-    C --> E[XGBoost Lag Feature Regressor]
-    D --> F[Ensemble Weighted Average]
-    E --> F
-    F --> G[Forecast Output & MAPE Evaluation]
+    B --> C[Feature Engineering - Lags & Rolling Stats]
+    C --> D[Festival & Calendar Feature Encoding]
+    D --> E[XGBoost Lag Feature Regressor]
+    E --> F[Forecast Horizon & Metric Evaluation]
 ```
 
 ### Feature Engineering Details

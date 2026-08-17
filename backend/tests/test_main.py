@@ -102,3 +102,149 @@ def test_llm_service_fallback():
     
     assert isinstance(resp, str)
     assert len(resp) > 10
+
+
+def test_human_approval_creates_po_with_timedelta():
+    """Regression test: Verifies human approval calculates expected_delivery with timedelta and creates PO."""
+    from app.database import SessionLocal, init_db
+    from app.models.models import (
+        AIRecommendation, RecommendationStatus, PurchaseOrder, PurchaseOrderItem,
+        Product, Supplier, User, AuditLog
+    )
+    from app.schemas.schemas import RecommendationReview
+    from app.routers.ai_center import review_decision
+
+    init_db()
+    db = SessionLocal()
+    try:
+        # Create test supplier and product
+        supplier = db.query(Supplier).first()
+        if not supplier:
+            supplier = Supplier(name="Test Vendor", reliability_score=95.0, lead_time_days=3.0)
+            db.add(supplier)
+            db.flush()
+
+        product = db.query(Product).first()
+        if not product:
+            product = Product(sku="TEST-SKU-01", name="Test Product", unit_cost=500.0, selling_price=900.0, supplier_id=supplier.id)
+            db.add(product)
+            db.flush()
+
+        user = db.query(User).first()
+        if not user:
+            user = User(first_name="Test", last_name="Admin", email="testadmin@retailmind.ai", hashed_password="x")
+            db.add(user)
+            db.flush()
+
+        # Create pending restock recommendation
+        rec = AIRecommendation(
+            title="Immediate Restock: Test Product",
+            agent_name="Inventory Agent",
+            priority="Critical",
+            category="Inventory",
+            description="Stock low",
+            reasoning="Current stock below safety threshold",
+            status=RecommendationStatus.PENDING,
+            action_data={"product_id": product.id, "quantity": 150}
+        )
+        db.add(rec)
+        db.commit()
+        db.refresh(rec)
+
+        # Execute approval
+        review = RecommendationReview(
+            recommendation_id=rec.id,
+            action=RecommendationStatus.APPROVED,
+            notes="Approved by QA Manager"
+        )
+        result = review_decision(review=review, db=db, current_user=user)
+
+        assert result["status"] == "success"
+        assert result["new_status"] == "Approved"
+
+        # Verify PO created with timedelta expected_delivery
+        po = db.query(PurchaseOrder).order_by(PurchaseOrder.id.desc()).first()
+        assert po is not None
+        assert po.status == "Approved"
+        assert po.expected_delivery is not None
+        assert po.total_cost == round(product.unit_cost * 150, 2)
+
+        # Verify PO item
+        po_item = db.query(PurchaseOrderItem).filter(PurchaseOrderItem.purchase_order_id == po.id).first()
+        assert po_item is not None
+        assert po_item.quantity == 150
+        assert po_item.product_id == product.id
+
+        # Verify AuditLog created
+        audit = db.query(AuditLog).filter(
+            AuditLog.entity_type == "AIRecommendation",
+            AuditLog.entity_id == rec.id
+        ).order_by(AuditLog.id.desc()).first()
+        assert audit is not None
+        assert "Approved" in audit.action
+
+    finally:
+        db.close()
+
+
+def test_human_rejection_prevents_po_creation():
+    """Regression test: Verifies human rejection marks status as Rejected without creating a PurchaseOrder."""
+    from app.database import SessionLocal, init_db
+    from app.models.models import AIRecommendation, RecommendationStatus, PurchaseOrder, User, AuditLog
+    from app.schemas.schemas import RecommendationReview
+    from app.routers.ai_center import review_decision
+
+    init_db()
+    db = SessionLocal()
+    try:
+        user = db.query(User).first()
+        if not user:
+            user = User(first_name="Test", last_name="Admin", email="testadmin2@retailmind.ai", hashed_password="x")
+            db.add(user)
+            db.flush()
+
+        initial_po_count = db.query(PurchaseOrder).count()
+
+        rec = AIRecommendation(
+            title="Risky Restock: High Defect Item",
+            agent_name="Inventory Agent",
+            priority="High",
+            category="Inventory",
+            description="Stock low but quality complaints active",
+            reasoning="Quality audit pending",
+            status=RecommendationStatus.PENDING,
+            action_data={"quantity": 100}
+        )
+        db.add(rec)
+        db.commit()
+        db.refresh(rec)
+
+        # Execute rejection
+        review = RecommendationReview(
+            recommendation_id=rec.id,
+            action=RecommendationStatus.REJECTED,
+            notes="Rejected due to vendor defect investigation"
+        )
+        result = review_decision(review=review, db=db, current_user=user)
+
+        assert result["status"] == "success"
+        assert result["new_status"] == "Rejected"
+
+        # Verify NO new PO was created
+        final_po_count = db.query(PurchaseOrder).count()
+        assert final_po_count == initial_po_count
+
+        # Verify DB status updated
+        db.refresh(rec)
+        assert rec.status == RecommendationStatus.REJECTED
+
+        # Verify AuditLog
+        audit = db.query(AuditLog).filter(
+            AuditLog.entity_type == "AIRecommendation",
+            AuditLog.entity_id == rec.id
+        ).order_by(AuditLog.id.desc()).first()
+        assert audit is not None
+        assert "Rejected" in audit.action
+
+    finally:
+        db.close()

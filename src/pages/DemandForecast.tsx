@@ -80,14 +80,15 @@ ${forecastData.map(f => `${f.date},${f.predicted},${f.actual || ''},${f.lowerBou
       <AgentDomainWidget
         agentId="demand"
         agentName="Demand Forecast Agent"
-        description="Analyzes historical sales patterns, seasonal trends, and festival impacts using Prophet + XGBoost ensemble models."
+        description="Analyzes historical sales patterns, seasonal trends, and festival impacts using XGBoost with temporal lag features."
         color="#5B5CEB"
         icon={TrendingUp}
-        defaultAnalysis="Q4 festival demand spike detected (+28% projected demand for laptops & accessories during festival period)."
+        defaultAnalysis="30-day demand forecast updated with high statistical confidence."
         defaultConfidence={94.2}
         defaultOutputs={[
-          "Prophet + XGBoost model retrained on historical points",
-          "High confidence interval for next 30-day forecast",
+          "XGBoost model retrained on historical transaction points",
+          "7-day, 14-day, and 30-day temporal lag features computed",
+          "95% confidence interval upper & lower bounds estimation",
           "Flagged SKUs with sudden sales velocity increase"
         ]}
       />

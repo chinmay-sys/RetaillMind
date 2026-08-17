@@ -122,6 +122,27 @@ export const auditAPI = {
   stats: () => api.get('/audit/stats'),
 }
 
+// ─── Customer Reviews & Feedback Intelligence API ───────
+export const reviewsAPI = {
+  dashboard: () => api.get('/reviews/dashboard'),
+  list: (limit = 10, offset = 0, productId?: number, sentiment?: string) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+    if (productId) params.set('product_id', String(productId))
+    if (sentiment) params.set('sentiment', sentiment)
+    return api.get(`/reviews/list?${params}`)
+  },
+  health: () => api.get('/reviews/health'),
+  sync: () => api.post('/reviews/sync'),
+  product: (id: number) => api.get(`/reviews/product/${id}`),
+  triggerDemoEvent: (data?: { review_text?: string; rating?: number; product_id?: number }) => {
+    const params = new URLSearchParams()
+    if (data?.review_text) params.set('review_text', data.review_text)
+    if (data?.rating !== undefined) params.set('rating', String(data.rating))
+    if (data?.product_id !== undefined) params.set('product_id', String(data.product_id))
+    return api.post(`/reviews/trigger-demo-event?${params}`)
+  },
+}
+
 // ─── Kaggle Dataset API ─────────────────────────────────
 export const kaggleAPI = {
   sync: (dataset = 'ahmdayman/retail-sales-dataset') => api.post(`/datasets/kaggle/sync?dataset=${dataset}`),

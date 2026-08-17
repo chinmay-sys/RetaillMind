@@ -125,7 +125,7 @@ CREATE TABLE forecasts (
     lower_bound FLOAT,
     upper_bound FLOAT,
     actual_demand FLOAT,
-    model_name VARCHAR(50) DEFAULT 'Prophet-XGBoost-Ensemble',
+    model_name VARCHAR(50) DEFAULT 'XGBoost-Demand-Forecaster',
     confidence_score FLOAT DEFAULT 94.2,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -171,11 +171,47 @@ CREATE TABLE audit_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 13. CUSTOMER REVIEWS TABLE
+CREATE TABLE customer_reviews (
+    id SERIAL PRIMARY KEY,
+    external_review_id VARCHAR(100) NOT NULL,
+    product_id INT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    customer_id INT REFERENCES customers(id) ON DELETE SET NULL,
+    source VARCHAR(100) NOT NULL DEFAULT 'DEMO REVIEW SOURCE',
+    review_text TEXT NOT NULL,
+    rating FLOAT NOT NULL,
+    review_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sentiment VARCHAR(20) DEFAULT 'NEUTRAL',
+    sentiment_score FLOAT DEFAULT 0.0,
+    detected_aspects JSONB,
+    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uix_ext_review_source UNIQUE (external_review_id, source)
+);
+
+-- 14. REVIEW SYNC HEALTH TABLE
+CREATE TABLE review_sync_health (
+    id SERIAL PRIMARY KEY,
+    source VARCHAR(100) UNIQUE NOT NULL,
+    last_successful_sync TIMESTAMP,
+    last_attempted_sync TIMESTAMP,
+    number_of_reviews_received INT DEFAULT 0,
+    sync_status VARCHAR(50) DEFAULT 'UNAVAILABLE',
+    error_message TEXT,
+    freshness_threshold_minutes INT DEFAULT 60,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- INDEXES FOR PERFORMANCE
 CREATE INDEX idx_sales_date ON sales(sale_date);
 CREATE INDEX idx_products_sku ON products(sku);
 CREATE INDEX idx_inventory_status ON inventory(status);
 CREATE INDEX idx_forecasts_date ON forecasts(forecast_date);
+CREATE INDEX idx_customer_reviews_date ON customer_reviews(review_date);
+CREATE INDEX idx_customer_reviews_product ON customer_reviews(product_id);
 
 -- SEED DATA
 INSERT INTO roles (name, description) VALUES

@@ -205,7 +205,7 @@ class Forecast(Base):
     lower_bound = Column(Float)
     upper_bound = Column(Float)
     actual_demand = Column(Float, nullable=True)
-    model_name = Column(String(50), default="Prophet-XGBoost-Ensemble")
+    model_name = Column(String(50), default="XGBoost-Demand-Forecaster")
     confidence_score = Column(Float, nullable=True)  # Computed from evaluation, not hardcoded
     created_at = Column(DateTime, default=_utcnow)
 

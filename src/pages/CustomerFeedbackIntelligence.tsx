@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { reviewsAPI } from '@/lib/api';
 
 interface HealthData {
   status: string;
@@ -90,17 +91,15 @@ export default function CustomerFeedbackIntelligence() {
     try {
       setLoading(true);
       const [dashRes, revRes] = await Promise.all([
-        fetch('http://localhost:8000/api/v1/reviews/dashboard'),
-        fetch('http://localhost:8000/api/v1/reviews/list?limit=10'),
+        reviewsAPI.dashboard(),
+        reviewsAPI.list(10),
       ]);
 
-      if (dashRes.ok) {
-        const dashData = await dashRes.json();
-        setDashboard(dashData);
+      if (dashRes.data) {
+        setDashboard(dashRes.data);
       }
-      if (revRes.ok) {
-        const revData = await revRes.json();
-        setReviews(revData.reviews || []);
+      if (revRes.data) {
+        setReviews(revRes.data.reviews || []);
       }
     } catch (e) {
       console.error('Failed to fetch review metrics:', e);
@@ -116,7 +115,7 @@ export default function CustomerFeedbackIntelligence() {
   const handleManualSync = async () => {
     try {
       setSyncing(true);
-      await fetch('http://localhost:8000/api/v1/reviews/sync', { method: 'POST' });
+      await reviewsAPI.sync();
       await fetchMetrics();
     } catch (e) {
       console.error('Sync failed:', e);
@@ -128,12 +127,9 @@ export default function CustomerFeedbackIntelligence() {
   const handleSimulateDemoEvent = async () => {
     try {
       setDemoing(true);
-      const res = await fetch('http://localhost:8000/api/v1/reviews/trigger-demo-event', {
-        method: 'POST',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setDemoResult(data);
+      const res = await reviewsAPI.triggerDemoEvent();
+      if (res.data) {
+        setDemoResult(res.data);
         await fetchMetrics();
       }
     } catch (e) {

@@ -88,8 +88,8 @@ RetailMind Ai/
 │   │   ├── agents/             # LangGraph Multi-Agent Orchestrator
 │   │   │   └── orchestrator.py # Domain Agents & Decision Agent
 │   │   ├── ml/                 # Machine Learning Pipeline
-│   │   │   └── forecaster.py   # Prophet + XGBoost Ensemble Model
-│   │   ├── models/             # SQLAlchemy Database Models (12 Tables)
+│   │   │   └── forecaster.py   # XGBoost Demand Forecasting Pipeline
+│   │   ├── models/             # SQLAlchemy Database Models (14 Tables)
 │   │   │   └── models.py
 │   │   ├── rag/                # Vector DB Retrieval & AI Chat
 │   │   │   └── chat_engine.py  # LangChain + Qdrant Integration

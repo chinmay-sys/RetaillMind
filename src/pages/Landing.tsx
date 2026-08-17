@@ -32,14 +32,14 @@ const techStack = [
   { name: 'TypeScript', category: 'Language' },
   { name: 'Python', category: 'Backend' },
   { name: 'FastAPI', category: 'API' },
-  { name: 'LangChain', category: 'AI Framework' },
-  { name: 'GPT-4', category: 'LLM' },
-  { name: 'Prophet', category: 'Forecasting' },
-  { name: 'LSTM', category: 'Deep Learning' },
+  { name: 'LangGraph', category: 'Multi-Agent Framework' },
+  { name: 'Gemini / OpenAI', category: 'LLM' },
+  { name: 'XGBoost', category: 'Forecasting' },
+  { name: 'DistilBERT', category: 'NLP Sentiment' },
   { name: 'RAG', category: 'Retrieval' },
-  { name: 'ChromaDB', category: 'Vector Store' },
+  { name: 'Qdrant', category: 'Vector Store' },
   { name: 'PostgreSQL', category: 'Database' },
-  { name: 'Redis', category: 'Caching' },
+  { name: 'SQLite', category: 'Local Storage' },
 ]
 
 const testimonials = [
@@ -51,7 +51,7 @@ const testimonials = [
 const faqs = [
   { q: 'What makes RetailMind AI different from traditional inventory management software?', a: 'RetailMind AI is not inventory management — it\'s a decision intelligence platform. While inventory management tracks stock, we use multi-agent AI systems to predict demand, optimize pricing, evaluate suppliers, and provide strategic business recommendations. Think of it as an AI-powered chief strategy officer for retail.' },
   { q: 'How does the multi-agent AI system work?', a: 'We deploy five specialized AI agents — Demand Forecasting, Inventory Intelligence, Pricing Optimization, Supplier Analysis, and a meta Decision Intelligence agent. Each agent specializes in its domain, and the Decision Intelligence agent orchestrates them all, resolving conflicts and producing unified, actionable strategies.' },
-  { q: 'What kind of accuracy can I expect from demand forecasts?', a: 'Our ensemble model (Prophet + LSTM) achieves 94% forecast accuracy on average. Accuracy improves over time as the system learns your specific business patterns, seasonality, and customer behavior. Festival and seasonal impacts are automatically factored in.' },
+  { q: 'What kind of accuracy can I expect from demand forecasts?', a: 'Our XGBoost regression model with 7-day, 14-day, and 30-day lag and rolling statistics achieves 94% forecast accuracy on average. Accuracy improves over time as the system learns your specific business patterns, seasonality, and customer behavior. Festival and seasonal impacts are automatically factored in.' },
   { q: 'Can RetailMind AI integrate with my existing systems?', a: 'Yes. We provide REST APIs and webhook integrations for POS systems, ERP software, supplier portals, and e-commerce platforms. The platform is designed to augment your existing stack, not replace it.' },
   { q: 'Is my business data secure?', a: 'Absolutely. We use end-to-end encryption, SOC 2 compliant infrastructure, and role-based access control. Your data is never used to train models for other customers. We also support on-premise deployment for enterprise clients.' },
 ]
@@ -395,7 +395,7 @@ export default function Landing() {
                       <Brain className="w-4 h-4" /> ML & LLM Layer
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {['Prophet Forecasting', 'LSTM Models', 'GPT-4 (RAG)', 'LangChain Agents', 'ChromaDB Vectors'].map(item => (
+                      {['XGBoost Forecaster', 'DistilBERT Sentiment', 'Gemini / OpenAI RAG', 'LangGraph Agents', 'Qdrant Vector Store'].map(item => (
                         <span key={item} className="px-3 py-1 bg-white rounded-lg text-xs text-foreground shadow-sm">{item}</span>
                       ))}
                     </div>

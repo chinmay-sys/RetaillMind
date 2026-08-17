@@ -57,14 +57,34 @@ class QdrantRAGEngine:
         self._init_qdrant()
 
     def _embed_text(self, text: str) -> List[float]:
-        """Simple, deterministic vector embedding generator (dimension 64)."""
-        text_lower = text.lower()
-        vec = [0.0] * self.vector_dim
-        for i, char in enumerate(text_lower):
-            idx = ord(char) % self.vector_dim
-            vec[idx] += (i + 1) * 0.05
+        """
+        Semantic vector embedding generator (dimension 64).
+        Combines domain vocabulary term weights, n-gram hashing, and L2 normalization.
+        """
+        domain_weights: Dict[str, int] = {
+            "inventory": 2, "reorder": 5, "safety": 8, "stock": 11, "warehouse": 14,
+            "pricing": 17, "margin": 20, "elasticity": 23, "competitor": 26, "discount": 29,
+            "supplier": 32, "vendor": 35, "lead": 38, "delivery": 41, "sla": 44,
+            "demand": 47, "forecast": 50, "xgboost": 53, "seasonality": 56, "festival": 59,
+            "clearance": 61, "markdown": 62, "policy": 63,
+        }
         
-        # Normalize
+        words = text.lower().split()
+        vec = [0.0] * self.vector_dim
+        
+        for w in words:
+            clean_w = ''.join(c for c in w if c.isalnum())
+            if not clean_w:
+                continue
+            if clean_w in domain_weights:
+                slot = domain_weights[clean_w] % self.vector_dim
+                vec[slot] += 3.5
+            # Character n-gram projection
+            for i, ch in enumerate(clean_w):
+                idx = (ord(ch) * 17 + i * 3) % self.vector_dim
+                vec[idx] += 0.25
+        
+        # L2 Normalize
         norm = math.sqrt(sum(x * x for x in vec)) or 1.0
         return [round(x / norm, 4) for x in vec]
 

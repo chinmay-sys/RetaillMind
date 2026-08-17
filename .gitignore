@@ -21,8 +21,9 @@ build/
 
 # Environment files & Local Databases
 .env
-.env.local
-.env.*.local
+.env.*
+backend/.env
+backend/.env.*
 *.db
 *.sqlite
 *.sqlite3

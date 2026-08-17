@@ -25,7 +25,7 @@ class DemandAgent(SpecializedAgent):
         super().__init__(
             agent_id="demand",
             name="Demand Forecast Agent",
-            description="Analyzes historical sales patterns, seasonal trends, and festival impacts using Prophet + XGBoost ensemble models.",
+            description="Analyzes historical sales patterns, seasonal trends, and festival impacts using XGBoost with lag & rolling features.",
             color="#5B5CEB"
         )
 
@@ -73,7 +73,7 @@ class DemandAgent(SpecializedAgent):
                     "latestAnalysis": f"30-day revenue: ₹{current_rev/100000:.1f}L ({'+' if growth >= 0 else ''}{growth}% MoM). Top velocity SKUs: {', '.join(top_names)}.",
                     "output": [
                         f"Processed {data_points:,} historical sales transaction logs",
-                        f"Prophet + XGBoost model retrained; 30-day forecast accuracy at {confidence}%",
+                        f"XGBoost Forecaster retrained; 30-day forecast accuracy at {confidence}%",
                         f"Identified {len(top_selling)} top-performing categories with positive demand momentum"
                     ]
                 }
@@ -88,7 +88,7 @@ class DemandAgent(SpecializedAgent):
             "executionTime": "1.2s",
             "latestAnalysis": "Q4 festival demand spike detected (+28% projected demand for laptops & accessories during festival period).",
             "output": [
-                "Prophet + XGBoost model retrained on historical points",
+                "XGBoost Forecaster retrained on historical points",
                 "High confidence interval for next 30-day forecast",
                 "Flagged 3 SKUs with sudden demand velocity increase"
             ]

@@ -41,6 +41,6 @@ def init_db():
     from app.models.models import (
         Base, Role, User, Category, Supplier, Product,
         Inventory, Sale, PurchaseOrder, PurchaseOrderItem, Forecast,
-        AIRecommendation, Report, AuditLog
+        AIRecommendation, Report, AuditLog, CustomerReview, ReviewSyncHealth
     )
     Base.metadata.create_all(bind=engine)
