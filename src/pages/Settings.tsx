@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   User, Building2, Shield, Bell, Palette,
-  Camera, Mail, Phone, MapPin, Globe
+  Camera, Mail, Phone, MapPin, Globe, CheckCircle2
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'

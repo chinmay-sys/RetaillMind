@@ -53,11 +53,19 @@ def get_sales_analytics(
             return round(((current_val - prev_val) / prev_val) * 100, 1)
         return 0.0
 
+    rev_val = round(float(current.revenue), 2) if current and current.revenue is not None else 0.0
+    units_val = int(current.units) if current and current.units is not None else 0
+    profit_val = round(float(current.profit), 2) if current and current.profit is not None else 0.0
+    tx_val = int(current.transactions) if current and current.transactions is not None else 0
+
     return {
-        "revenue": round(float(current.revenue), 2),
-        "units_sold": int(current.units),
-        "profit": round(float(current.profit), 2),
-        "transactions": int(current.transactions),
+        "revenue": rev_val,
+        "total_revenue": rev_val,
+        "units_sold": units_val,
+        "total_sales": units_val,
+        "profit": profit_val,
+        "total_profit": profit_val,
+        "transactions": tx_val,
         "revenue_growth": calc_growth(float(current.revenue), float(previous.revenue)),
         "units_growth": calc_growth(float(current.units), float(previous.units)),
         "profit_growth": calc_growth(float(current.profit), float(previous.profit)),

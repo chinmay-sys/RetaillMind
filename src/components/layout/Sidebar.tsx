@@ -2,28 +2,13 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  LayoutDashboard, BarChart3, TrendingUp, Package, DollarSign,
-  Users, Brain, FileText, MessageSquare, Settings, ChevronLeft,
-  ChevronRight, Sparkles, LogOut
+  ChevronLeft, ChevronRight, Sparkles, LogOut
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/contexts/AuthContext'
-
-const navItems = [
-  { path: '/app', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { path: '/app/analytics', icon: BarChart3, label: 'Analytics' },
-  { path: '/app/forecast', icon: TrendingUp, label: 'Forecast' },
-  { path: '/app/inventory', icon: Package, label: 'Inventory' },
-  { path: '/app/pricing', icon: DollarSign, label: 'Pricing' },
-  { path: '/app/suppliers', icon: Users, label: 'Suppliers' },
-  { path: '/app/customer-reviews', icon: MessageSquare, label: 'Customer Reviews' },
-  { path: '/app/ai-center', icon: Brain, label: 'AI Decision Center' },
-  { path: '/app/reports', icon: FileText, label: 'Reports' },
-  { path: '/app/chat', icon: MessageSquare, label: 'AI Chat' },
-  { path: '/app/settings', icon: Settings, label: 'Settings' },
-]
+import { ROLE_SIDEBAR_ITEMS, ROLE_DISPLAY_NAMES, ROLE_BADGE_COLORS, AppRole, type NavItem } from '@/lib/roles'
 
 interface SidebarProps {
   collapsed: boolean
@@ -33,7 +18,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, normalizedRole } = useAuth()
 
   const handleLogout = () => {
     logout()
@@ -43,6 +28,19 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const initials = user
     ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase()
     : 'RM'
+
+  // Get role-specific navigation items
+  const navItems: NavItem[] = normalizedRole
+    ? ROLE_SIDEBAR_ITEMS[normalizedRole]
+    : ROLE_SIDEBAR_ITEMS[AppRole.ANALYST] // fallback: least privilege
+
+  const roleName = normalizedRole
+    ? ROLE_DISPLAY_NAMES[normalizedRole]
+    : 'User'
+
+  const roleBadgeColor = normalizedRole
+    ? ROLE_BADGE_COLORS[normalizedRole]
+    : 'bg-gray-100 text-gray-700'
 
   return (
     <motion.aside
@@ -164,9 +162,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <p className="text-sm font-medium text-foreground truncate">
                 {user ? `${user.first_name} ${user.last_name}` : 'Retail Manager'}
               </p>
-              <p className="text-xs text-muted truncate">
-                {user?.role || 'Retail Manager'}
-              </p>
+              <span className={cn('inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-md mt-0.5', roleBadgeColor)}>
+                {roleName}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>

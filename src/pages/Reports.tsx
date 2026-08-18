@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FileText, Download, Calendar, Clock, Eye, FileSpreadsheet, File, Loader2, CheckCircle2, X, Printer, Sparkles, TrendingUp, Package } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -8,11 +8,10 @@ import { reportsAPI } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const defaultReports = [
-  { id: 1, title: 'Monthly Executive Retail Performance Report', type: 'executive', date: '2026-01-31', status: 'Ready', pages: 12, highlights: ['Gross Revenue: ₹4.8M (+12.5%)', 'Top Category: Home & Decor (35%)', 'AI Forecast Accuracy: 94.2%'] },
-  { id: 2, title: 'Weekly Inventory Audit & Reorder Strategy', type: 'weekly', date: '2026-01-28', status: 'Ready', pages: 6, highlights: ['2 critical reorder alerts issued', 'Warehouse inventory valuation: ₹67.5L', 'Safety stock buffer maintained at 95%'] },
-  { id: 3, title: 'Demand Forecasting & Seasonality Analysis', type: 'monthly', date: '2026-01-25', status: 'Ready', pages: 8, highlights: ['30-day forecast models tuned', 'Diwali surge expected at +45%', 'Stockout risk reduced by 22%'] },
+  { id: 1, title: 'Monthly Executive Retail Performance Report', type: 'executive', date: '2026-01-31', status: 'ready', pages: 12, highlights: ['Gross Revenue: ₹4.8M (+12.5%)', 'Top Category: Home & Decor (35%)', 'AI Forecast Accuracy: 94.2%'] },
+  { id: 2, title: 'Weekly Inventory Audit & Reorder Strategy', type: 'weekly', date: '2026-01-28', status: 'ready', pages: 6, highlights: ['2 critical reorder alerts issued', 'Warehouse inventory valuation: ₹67.5L', 'Safety stock buffer maintained at 95%'] },
+  { id: 3, title: 'Demand Forecasting & Seasonality Analysis', type: 'monthly', date: '2026-01-25', status: 'ready', pages: 8, highlights: ['30-day forecast models tuned', 'Diwali surge expected at +45%', 'Stockout risk reduced by 22%'] },
 ]
-
 
 const typeConfig = {
   weekly: { label: 'Weekly', color: 'bg-primary/10 text-primary', icon: Calendar },
@@ -35,6 +34,29 @@ export default function Reports() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null)
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null)
+
+  useEffect(() => {
+    const fetchBackendReports = async () => {
+      try {
+        const res = await reportsAPI.list()
+        if (res.data?.reports && res.data.reports.length > 0) {
+          const mapped = res.data.reports.map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            type: (r.type || 'weekly').toLowerCase(),
+            date: r.date || 'Jan 31, 2026',
+            status: (r.status || 'ready').toLowerCase(),
+            pages: r.pages || 8,
+            highlights: r.highlights || [],
+          }))
+          setReportList(mapped)
+        }
+      } catch (err) {
+        console.warn('Could not fetch reports from backend:', err)
+      }
+    }
+    fetchBackendReports()
+  }, [])
 
   const handleGenerate = (type: 'weekly' | 'monthly' | 'executive', title: string) => {
     setIsGenerating(true)
@@ -186,7 +208,7 @@ System Confidence,96%
                             <span className="text-xs text-muted">{report.date}</span>
                             <span className="text-xs text-muted">•</span>
                             <Badge variant="outline" className="text-[10px]">{config.label}</Badge>
-                            {report.status === 'ready' ? (
+                            {report.status?.toLowerCase() === 'ready' ? (
                               <Badge variant="success" className="text-[10px]">
                                 <CheckCircle2 className="w-3 h-3 mr-1" /> Ready
                               </Badge>
@@ -207,7 +229,7 @@ System Confidence,96%
                           )}
                         </div>
                       </div>
-                      {report.status === 'ready' && (
+                      {report.status?.toLowerCase() === 'ready' && (
                         <div className="flex items-center gap-2 shrink-0">
                           <Button
                             variant="ghost"
@@ -229,7 +251,7 @@ System Confidence,96%
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleExcelDownload(report.title)}
+                            onClick={() => handleExcelDownload(report.title, report.id)}
                             className="cursor-pointer hover:bg-success hover:text-white"
                           >
                             <FileSpreadsheet className="w-3.5 h-3.5" /> Excel

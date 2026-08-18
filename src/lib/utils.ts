@@ -5,25 +5,57 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(value: number): string {
-  if (value >= 10000000) {
-    return `₹${(value / 10000000).toFixed(1)}Cr`
+export function formatCurrency(value?: number | string | null, compact = true): string {
+  if (value === null || value === undefined || value === '') {
+    return '—'
   }
-  if (value >= 100000) {
-    return `₹${(value / 100000).toFixed(1)}L`
+  const num = typeof value === 'number' ? value : Number(value)
+  if (isNaN(num) || !isFinite(num)) {
+    return '—'
   }
-  if (value >= 1000) {
-    return `₹${(value / 1000).toFixed(1)}K`
+  if (num === 0) {
+    return '₹0'
   }
-  return `₹${value.toFixed(0)}`
+
+  const absNum = Math.abs(num)
+  const sign = num < 0 ? '-' : ''
+
+  if (compact) {
+    if (absNum >= 10000000) {
+      return `${sign}₹${(absNum / 10000000).toFixed(2)} Cr`
+    }
+    if (absNum >= 100000) {
+      return `${sign}₹${(absNum / 100000).toFixed(1)} L`
+    }
+    if (absNum >= 1000) {
+      return `${sign}₹${(absNum / 1000).toFixed(1)} K`
+    }
+    return `${sign}₹${absNum.toLocaleString('en-IN')}`
+  }
+
+  return `${sign}₹${absNum.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
 }
 
-export function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-IN').format(value)
+export function formatNumber(value?: number | string | null): string {
+  if (value === null || value === undefined || value === '') {
+    return '—'
+  }
+  const num = typeof value === 'number' ? value : Number(value)
+  if (isNaN(num) || !isFinite(num)) {
+    return '—'
+  }
+  return new Intl.NumberFormat('en-IN').format(num)
 }
 
-export function formatPercent(value: number): string {
-  return `${value.toFixed(1)}%`
+export function formatPercent(value?: number | string | null): string {
+  if (value === null || value === undefined || value === '') {
+    return '—'
+  }
+  const num = typeof value === 'number' ? value : Number(value)
+  if (isNaN(num) || !isFinite(num)) {
+    return '—'
+  }
+  return `${num.toFixed(1)}%`
 }
 
 export function formatDate(date: Date): string {

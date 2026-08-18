@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/AuthContext'
+import { normalizeRole, getRoleDashboardPath } from '@/lib/roles'
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
@@ -32,7 +33,9 @@ export default function Register() {
     setIsSubmitting(true)
     try {
       await register({ first_name: firstName, last_name: lastName, email, password, organization: organization || undefined })
-      navigate('/app')
+      const savedUser = JSON.parse(localStorage.getItem('retailmind_user') || '{}')
+      const role = normalizeRole(savedUser.role)
+      navigate(getRoleDashboardPath(role))
     } catch (err: any) {
       setLocalError(err.message || 'Registration failed')
     } finally {

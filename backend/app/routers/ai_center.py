@@ -11,7 +11,7 @@ from app.models.models import (
     AIRecommendation, RecommendationStatus, AuditLog, User,
 )
 from app.schemas.schemas import RecommendationReview
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_manager_or_above
 from app.agents.orchestrator import ai_orchestrator
 
 router = APIRouter(prefix="/ai-center", tags=["AI Decision Center"])
@@ -94,7 +94,7 @@ def trigger_single_agent(
 def review_decision(
     review: RecommendationReview,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_manager_or_above),
 ):
     """
     Human-in-the-Loop: Manager approves, modifies, or rejects an AI recommendation.
@@ -127,7 +127,8 @@ def review_decision(
                     prod = db.query(Product).first()
 
                 if prod:
-                    po_num = f"PO-AUTO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                    import uuid
+                    po_num = f"PO-AUTO-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
                     qty = rec.action_data.get("quantity", 200) if rec.action_data else 200
                     total = round(prod.unit_cost * qty, 2)
                     

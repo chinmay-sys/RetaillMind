@@ -1,8 +1,14 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { AppRole, getRoleDashboardPath } from '@/lib/roles'
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
+interface ProtectedRouteProps {
+  children: React.ReactNode
+  allowedRoles?: AppRole[]
+}
+
+export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading, normalizedRole } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
@@ -14,7 +20,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <p className="text-sm text-muted">Loading...</p>
+          <p className="text-sm text-muted">Loading authentication...</p>
         </div>
       </div>
     )
@@ -22,6 +28,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />
+  }
+
+  // Role-based access check
+  if (allowedRoles && normalizedRole && !allowedRoles.includes(normalizedRole)) {
+    // Redirect to the user's own dashboard instead of showing an error
+    const correctPath = getRoleDashboardPath(normalizedRole)
+    return <Navigate to={correctPath} replace />
   }
 
   return <>{children}</>

@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from app.database import get_db
 from app.models.models import Product, Inventory, InventoryStatus, Sale, User
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_manager_or_above
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/pricing", tags=["Pricing Intelligence"])
@@ -140,7 +140,7 @@ def update_product_price(
     product_id: int,
     selling_price: float,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_manager_or_above),
 ):
     """Updates selling price for a product in the database."""
     from fastapi import HTTPException

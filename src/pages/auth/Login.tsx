@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/contexts/AuthContext'
+import { normalizeRole, getRoleDashboardPath } from '@/lib/roles'
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
@@ -29,7 +30,10 @@ export default function Login() {
     setIsSubmitting(true)
     try {
       await login(email, password)
-      navigate('/app')
+      // AuthContext.login() saves user to localStorage synchronously before returning
+      const savedUser = JSON.parse(localStorage.getItem('retailmind_user') || '{}')
+      const role = normalizeRole(savedUser.role)
+      navigate(getRoleDashboardPath(role))
     } catch (err: any) {
       setLocalError(err.message || 'Login failed')
     } finally {

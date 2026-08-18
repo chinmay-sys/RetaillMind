@@ -26,14 +26,18 @@ class SentimentAnalyzer:
     """
     Real Pretrained Hugging Face Sentiment Analysis & Aspect Extraction Engine.
     Uses DistilBERT / RoBERTa transformer pipeline for core classification.
+    Lazy-loads weights on first use to ensure instant application startup.
     """
 
     def __init__(self):
         self._hf_pipeline = None
         self._hf_loaded = False
-        self._load_hf_model()
+        self._hf_attempted = False
 
     def _load_hf_model(self):
+        if self._hf_attempted:
+            return
+        self._hf_attempted = True
         try:
             from transformers import pipeline
             self._hf_pipeline = pipeline(
@@ -56,6 +60,8 @@ class SentimentAnalyzer:
         - confidence: float (0.0 to 1.0)
         - aspects: Dict[str, str] (e.g. {"Battery": "NEGATIVE"})
         """
+        if not self._hf_attempted:
+            self._load_hf_model()
         text_lower = review_text.lower()
         sentiment = "NEUTRAL"
         confidence = 0.85

@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/contexts/AuthContext'
+import { ROLE_PAGE_TITLES, ROLE_DISPLAY_NAMES, ROLE_BADGE_COLORS, ROLE_SIDEBAR_ITEMS } from '@/lib/roles'
+import { cn } from '@/lib/utils'
 
 const initialNotifications = [
   { id: 1, title: 'Low Stock Alert', message: 'Heart Of Wicker Small stock below safety level (23 units)', time: '2 min ago', read: false, type: 'warning' },
@@ -23,18 +25,7 @@ const initialNotifications = [
 ]
 
 
-const pageTitles: Record<string, { title: string; subtitle: string }> = {
-  '/app': { title: 'Dashboard', subtitle: 'Welcome back' },
-  '/app/analytics': { title: 'Analytics', subtitle: 'Revenue, sales, and performance insights' },
-  '/app/forecast': { title: 'Demand Forecast', subtitle: 'AI-powered demand predictions' },
-  '/app/inventory': { title: 'Inventory Intelligence', subtitle: 'Real-time stock monitoring & optimization' },
-  '/app/pricing': { title: 'Pricing Intelligence', subtitle: 'Smart pricing recommendations' },
-  '/app/suppliers': { title: 'Supplier Intelligence', subtitle: 'Supplier performance & procurement insights' },
-  '/app/ai-center': { title: 'AI Decision Center', subtitle: 'Orchestrating intelligent retail decisions' },
-  '/app/reports': { title: 'Reports', subtitle: 'Business reports & executive summaries' },
-  '/app/chat': { title: 'AI Chat', subtitle: 'Conversational business intelligence' },
-  '/app/settings': { title: 'Settings', subtitle: 'Manage your account & preferences' },
-}
+const pageTitles: Record<string, { title: string; subtitle: string }> = ROLE_PAGE_TITLES
 
 const notifTargetRoutes: Record<string, string> = {
   'Low Stock Alert': '/app/inventory',
@@ -71,13 +62,24 @@ const searchPages = [
 export function TopBar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, normalizedRole } = useAuth()
   const [notifs, setNotifs] = useState(initialNotifications)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
   const pageInfo = pageTitles[location.pathname] || { title: 'RetailMind AI', subtitle: '' }
   const unreadCount = notifs.filter(n => !n.read).length
+
+  // Filter search results based on role — analysts don't see admin/manager-only pages
+  const allowedPaths = normalizedRole ? ROLE_SIDEBAR_ITEMS[normalizedRole].map(i => i.path) : []
+  const roleFilteredSearch = searchPages.filter(item => {
+    // Always show product SKUs and suppliers for all roles
+    if (item.category !== 'Navigation') return true
+    return allowedPaths.some(p => item.path === p || item.path.startsWith(p + '/'))
+  })
+
+  const roleName = normalizedRole ? ROLE_DISPLAY_NAMES[normalizedRole] : 'User'
+  const roleBadgeColor = normalizedRole ? ROLE_BADGE_COLORS[normalizedRole] : 'bg-gray-100 text-gray-700'
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -108,7 +110,7 @@ export function TopBar() {
     setNotifs(prev => prev.map(n => ({ ...n, read: true })))
   }
 
-  const filteredSearch = searchPages.filter(item =>
+  const filteredSearch = roleFilteredSearch.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.category.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -117,7 +119,7 @@ export function TopBar() {
     ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase()
     : 'RM'
 
-  const subtitleText = location.pathname === '/app' && user
+  const subtitleText = (location.pathname === '/app/admin' || location.pathname === '/app/manager' || location.pathname === '/app/analyst') && user
     ? `Welcome back, ${user.first_name}`
     : pageInfo.subtitle
 
@@ -209,6 +211,7 @@ export function TopBar() {
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{user ? `${user.first_name} ${user.last_name}` : 'Retail Manager'}</span>
                     <span className="text-xs text-muted font-normal">{user?.email || 'manager@retailmind.ai'}</span>
+                    <span className={cn('inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-md mt-1 w-fit', roleBadgeColor)}>{roleName}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

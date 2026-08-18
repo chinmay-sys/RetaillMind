@@ -148,6 +148,8 @@ class ReviewSyncScheduler:
             logger.info("Stopped ReviewSyncScheduler background task")
 
     async def _poll_loop(self):
+        # Initial non-blocking grace delay to let FastAPI startup complete instantly
+        await asyncio.sleep(2)
         while self._running:
             try:
                 logger.info("⏰ ReviewSyncScheduler triggering periodic review sync...")

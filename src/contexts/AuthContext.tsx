@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authAPI } from '@/lib/api'
+import { AppRole, normalizeRole } from '@/lib/roles'
 
 interface User {
   user_id: number
@@ -16,6 +17,7 @@ interface AuthContextType {
   token: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  normalizedRole: AppRole | null
   login: (email: string, password: string) => Promise<void>
   register: (data: { first_name: string; last_name: string; email: string; password: string; organization?: string }) => Promise<void>
   logout: () => void
@@ -118,9 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearError = () => setError(null)
 
+  const normalizedRole = user ? normalizeRole(user.role) : null
+
   return (
     <AuthContext.Provider value={{
-      user, token, isAuthenticated: !!token, isLoading,
+      user, token, isAuthenticated: !!token, isLoading, normalizedRole,
       login, register, logout, updateUser, error, clearError,
     }}>
       {children}

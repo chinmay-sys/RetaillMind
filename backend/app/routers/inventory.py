@@ -9,7 +9,7 @@ import math
 
 from app.database import get_db
 from app.models.models import Inventory, InventoryStatus, Product, Category, User
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_manager_or_above
 
 router = APIRouter(prefix="/inventory", tags=["Inventory Intelligence"])
 
@@ -155,7 +155,7 @@ def update_inventory_stock(
     current_stock: Optional[int] = None,
     safety_stock: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_manager_or_above),
 ):
     """Update stock levels for an inventory item."""
     inv = db.query(Inventory).filter(Inventory.id == item_id).first()
