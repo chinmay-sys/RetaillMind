@@ -45,7 +45,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5174",
         "http://localhost:4173",
         # Production frontend
-        "https://retailmind-ai.vercel.app",
+        "https://frontend-kappa-dusky-26.vercel.app",
     ]
 
     class Config:
