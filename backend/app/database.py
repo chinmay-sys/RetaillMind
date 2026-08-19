@@ -37,10 +37,32 @@ def get_db():
         db.close()
 
 def init_db():
-    """Create all database tables."""
+    """Create all database tables and ensure user schema compatibility."""
     from app.models.models import (
         Base, Role, User, Category, Supplier, Product,
         Inventory, Sale, PurchaseOrder, PurchaseOrderItem, Forecast,
         AIRecommendation, Report, AuditLog, CustomerReview, ReviewSyncHealth
     )
     Base.metadata.create_all(bind=engine)
+
+    # Safe column migration for existing SQLite / Postgres databases
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        if "users" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("users")]
+            with engine.connect() as conn:
+                if "email_verified" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 1"))
+                if "verification_otp_hash" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN verification_otp_hash VARCHAR(255)"))
+                if "verification_expires_at" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN verification_expires_at TIMESTAMP"))
+                if "failed_otp_attempts" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN failed_otp_attempts INTEGER DEFAULT 0"))
+                if "last_otp_sent_at" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN last_otp_sent_at TIMESTAMP"))
+                conn.commit()
+    except Exception as e:
+        # Non-critical warning if columns already present or engine handles it
+        pass

@@ -19,28 +19,36 @@ async def lifespan(app: FastAPI):
     """Startup: create tables, run seed, and start review sync background scheduler."""
     logger.info("🚀 Initializing RetailMind AI database...")
     init_db()
-    db = SessionLocal()
-    try:
-        from app.models.models import Product, Sale
-        # Check if old mock data exists (GLP-X1) or if database has no products/sales
-        old_mock = db.query(Product).filter(Product.sku == "GLP-X1-001").first()
-        no_products = db.query(Product).first() is None
-        no_sales = db.query(Sale).first() is None
-        
-        if old_mock or no_products or no_sales:
-            logger.info("🌱 Seeding database with real Kaggle Retail dataset...")
-            try:
-                from app.seed import seed
-                seed(force=True)
-                logger.info("✅ Database seeded with Kaggle dataset successfully")
-            except Exception as se:
-                logger.warning(f"⚠️ Seeding notice: {se}")
-        else:
-            logger.info("✅ Database already initialized with Kaggle dataset")
-    except Exception as e:
-        logger.warning(f"⚠️ Lifespan initialization notice: {e}")
-    finally:
-        db.close()
+    
+    needs_seed = False
+    force_seed = False
+    with SessionLocal() as db:
+        try:
+            from app.models.models import Product, Sale
+            old_mock = db.query(Product).filter(Product.sku == "GLP-X1-001").first()
+            no_products = db.query(Product).first() is None
+            no_sales = db.query(Sale).first() is None
+            
+            if old_mock:
+                needs_seed = True
+                force_seed = True
+            elif no_products or no_sales:
+                needs_seed = True
+                force_seed = False
+            else:
+                logger.info("✅ Database already initialized with Kaggle dataset")
+        except Exception as e:
+            logger.warning(f"⚠️ Lifespan initialization check notice: {e}")
+            needs_seed = True
+
+    if needs_seed:
+        logger.info("🌱 Seeding database with real Kaggle Retail dataset...")
+        try:
+            from app.seed import seed
+            seed(force=force_seed)
+            logger.info("✅ Database seeded with Kaggle dataset successfully")
+        except Exception as se:
+            logger.warning(f"⚠️ Seeding notice: {se}")
 
     # Start background review polling scheduler
     await review_sync_scheduler.start()

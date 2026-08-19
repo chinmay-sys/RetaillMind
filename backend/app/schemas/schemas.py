@@ -15,7 +15,20 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     organization: Optional[str] = "RetailMind Corp"
-    role: Optional[UserRole] = UserRole.RETAIL_MANAGER
+    role: Optional[str] = None  # Ignored server-side; always enforced to Business Analyst
+
+class RegisterResponse(BaseModel):
+    message: str
+    email: str
+    email_verified: bool
+    role: str
+
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 class Token(BaseModel):
     access_token: str
@@ -34,6 +47,7 @@ class UserResponse(BaseModel):
     role: UserRole
     organization: str
     is_active: bool
+    email_verified: bool = False
     created_at: datetime
 
     class Config:

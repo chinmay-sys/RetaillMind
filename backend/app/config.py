@@ -25,6 +25,17 @@ class Settings(BaseSettings):
     QDRANT_PORT: int = 6333
     QDRANT_COLLECTION: str = "retail_knowledge"
     
+    # Email & Verification Settings
+    EMAIL_PROVIDER: str = "console"
+    EMAIL_FROM: str = "noreply@retailmind.ai"
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    OTP_EXPIRE_MINUTES: int = 10
+    OTP_MAX_ATTEMPTS: int = 5
+    OTP_RESEND_COOLDOWN_SECONDS: int = 60
+
     # CORS Origins
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",

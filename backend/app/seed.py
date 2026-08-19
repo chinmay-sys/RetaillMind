@@ -46,27 +46,25 @@ def _hash(pwd: str) -> str:
 
 def seed(force: bool = False):
     init_db()
-    db = SessionLocal()
-
-    # Skip if already seeded and force is False
-    if not force and db.query(Role).first():
-        print("Database already seeded. Skipping.")
-        db.close()
-        return
 
     if force:
         print("🧹 Force re-seeding database...")
         try:
             from app.database import engine
             from app.models.models import Base
-            db.close()
+            engine.dispose()
             Base.metadata.drop_all(bind=engine)
             Base.metadata.create_all(bind=engine)
-            db = SessionLocal()
             print("  ✅ Database schema recreated cleanly")
         except Exception as e:
             print(f"⚠️ Clean recreate warning: {e}")
-            db = SessionLocal()
+
+    db = SessionLocal()
+    # Skip if already seeded and force is False
+    if not force and db.query(Role).first():
+        print("Database already seeded. Skipping.")
+        db.close()
+        return
 
 
     print("🌱 Seeding RetailMind AI database...")
@@ -93,28 +91,36 @@ def seed(force: bool = False):
                 email="chinmay@retailmind.ai",
                 hashed_password=_hash("admin123"),
                 role="Admin", role_id=roles[0].id if roles else 1,
-                organization="RetailMind Corp"
+                organization="RetailMind Corp",
+                email_verified=True,
             ),
             User(
                 first_name="Priya", last_name="Sharma",
                 email="priya@retailmind.ai",
                 hashed_password=_hash("manager123"),
                 role="Retail Manager", role_id=roles[1].id if len(roles) > 1 else 1,
-                organization="RetailMind Corp"
+                organization="RetailMind Corp",
+                email_verified=True,
             ),
             User(
                 first_name="Vikram", last_name="Desai",
                 email="vikram@retailmind.ai",
                 hashed_password=_hash("analyst123"),
                 role="Business Analyst", role_id=roles[2].id if len(roles) > 2 else 1,
-                organization="RetailMind Corp"
+                organization="RetailMind Corp",
+                email_verified=True,
             ),
         ]
         db.add_all(users)
         db.flush()
         print("  ✅ Users created")
     else:
-        print("  ✅ Users already exist")
+        # Ensure existing seeded users are marked verified
+        for u in users:
+            if getattr(u, 'email_verified', None) is not True:
+                u.email_verified = True
+        db.commit()
+        print("  ✅ Users already exist (verified)")
 
 
     # ── 3. CATEGORIES ──

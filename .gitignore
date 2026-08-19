@@ -1,4 +1,5 @@
 # Dependencies
+frontend/node_modules/
 node_modules/
 backend/venv/
 venv/
@@ -14,6 +15,7 @@ __pycache__/
 .coverage
 
 # Build outputs
+frontend/dist/
 dist/
 dist-ssr/
 build/
